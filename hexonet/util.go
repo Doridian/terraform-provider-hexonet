@@ -32,3 +32,20 @@ func columnFirstOrDefault(resp *response.Response, colName string, def string) s
 
 	return data[0]
 }
+
+func fillRequestArray(list []interface{}, prefix string, req map[string]interface{}, maxEntries int, deleteOnEmpty bool) {
+	if len(list) < 1 && !deleteOnEmpty {
+		return
+	}
+
+	listIdx := 0
+	for _, item := range list {
+		req[fmt.Sprintf("%s%d", prefix, listIdx)] = item.(string)
+		listIdx++
+	}
+
+	for listIdx < maxEntries {
+		req[fmt.Sprintf("%s%d", prefix, listIdx)] = ""
+		listIdx++
+	}
+}

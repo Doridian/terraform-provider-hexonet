@@ -2,7 +2,6 @@ package hexonet
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -65,17 +64,7 @@ func makeNameserverCommand(cl *apiclient.APIClient, cmd string, addData bool, d 
 	d.SetId(nameserver)
 
 	if addData {
-		ipAddressIdx := 0
-		ips := d.Get("ip_addresses").([]interface{})
-		for _, ip := range ips {
-			req[fmt.Sprintf("IPADDRESS%d", ipAddressIdx)] = ip.(string)
-			ipAddressIdx++
-		}
-
-		for ipAddressIdx < MAX_IPADDRESS {
-			req[fmt.Sprintf("IPADDRESS%d", ipAddressIdx)] = ""
-			ipAddressIdx++
-		}
+		fillRequestArray(d.Get("ip_addresses").([]interface{}), "IPADDRESS", req, MAX_IPADDRESS, true)
 	}
 
 	return cl.Request(req)

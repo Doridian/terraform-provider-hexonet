@@ -3,6 +3,7 @@ package hexonet
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -12,6 +13,8 @@ import (
 
 const MAX_NAMESERVERS = 12
 const MAX_WHOIS_BANNER = 3
+
+const MAX_CONTACTS = 3
 
 func resourceDomain() *schema.Resource {
 	return &schema.Resource{
@@ -38,29 +41,54 @@ func resourceDomain() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"whois": {
+			"auth_code": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"extra_attributes": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"owner_contacts": {
 				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"url": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"rsp": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"banner": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: MAX_WHOIS_BANNER,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-					},
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"admin_contacts": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: MAX_CONTACTS,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"tech_contacts": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: MAX_CONTACTS,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"billing_contacts": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: MAX_CONTACTS,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
 				},
 			},
 		},
@@ -84,19 +112,12 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sch
 	d.SetId(domain)
 
 	if addData {
-		nameservers := d.Get("name_servers").([]interface{})
-		if nameservers != nil {
-			nameserverIdx := 0
-			for _, ns := range nameservers {
-				req[fmt.Sprintf("NAMESERVER%d", nameserverIdx)] = ns.(string)
-				nameserverIdx++
-			}
+		fillRequestArray(d.Get("name_servers").([]interface{}), "NAMESERVER", req, MAX_NAMESERVERS, false)
 
-			for nameserverIdx < MAX_NAMESERVERS {
-				req[fmt.Sprintf("NAMESERVER%d", nameserverIdx)] = ""
-				nameserverIdx++
-			}
-		}
+		fillRequestArray(d.Get("owner_contacts").([]interface{}), "OWNERCONTACT", req, 1, false)
+		fillRequestArray(d.Get("admin_contacts").([]interface{}), "ADMINCONTACT", req, MAX_CONTACTS, false)
+		fillRequestArray(d.Get("tech_contacts").([]interface{}), "TECHCONTACT", req, MAX_CONTACTS, false)
+		fillRequestArray(d.Get("billing_contacts").([]interface{}), "BILLINGCONTACT", req, MAX_CONTACTS, true)
 
 		transferLock := d.Get("transfer_lock")
 		if transferLock != nil {
@@ -107,34 +128,24 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sch
 			req["TRANSFERLOCK"] = transferLockInt
 		}
 
-		whoisRaw := d.Get("whois")
-		if whoisRaw != nil {
-			whois := whoisRaw.([]interface{})
-			if len(whois) > 0 {
-				whoisEntry := whois[0].(map[string]interface{})
-				str, ok := whoisEntry["url"]
-				if ok {
-					req["X-WHOIS-URL"] = str.(string)
-				}
-				str, ok = whoisEntry["rsp"]
-				if ok {
-					req["X-WHOIS-RSP"] = str.(string)
-				}
+		extraAttributesOld, extraAttributesNew := d.GetChange("extra_attributes")
+		extraAttributes := extraAttributesNew.(map[string]interface{})
 
-				banners := whoisEntry["banner"].([]interface{})
-				if banners != nil {
-					bannerIdx := 0
-					for _, banner := range banners {
-						req[fmt.Sprintf("X-WHOIS-BANNER%d", bannerIdx)] = banner.(string)
-						bannerIdx++
-					}
-
-					for bannerIdx < MAX_WHOIS_BANNER {
-						req[fmt.Sprintf("X-WHOIS-BANNER%d", bannerIdx)] = ""
-						bannerIdx++
-					}
-				}
+		// Get all the previous attributes and set them to empty string (remove)
+		// That way, if they are not in the current config, this will clear them correctly
+		if extraAttributesOld != nil {
+			extraAttributesOldMap := extraAttributesOld.(map[string]interface{})
+			for k := range extraAttributesOldMap {
+				req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = ""
 			}
+		}
+
+		for k, v := range extraAttributes {
+			// Treat empty string as un-set
+			if v == "" {
+				continue
+			}
+			req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = v
 		}
 	}
 
@@ -168,30 +179,56 @@ func resourceDomainRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diags
 	}
 
+	// Load basic information
 	d.Set("domain", d.Id())
 	d.Set("name_servers", resp.GetColumn("NAMESERVER").GetData())
-
 	d.Set("transfer_lock", columnFirstOrDefault(resp, "TRANSFERLOCK", "0") == "1")
+	d.Set("status", resp.GetColumn("STATUS").GetData())
+	d.Set("auth_code", columnFirstOrDefault(resp, "AUTH,", ""))
 
-	whois := make(map[string]interface{})
-	whois["rsp"] = columnFirstOrDefault(resp, "X-WHOIS-RSP", "")
-	whois["url"] = columnFirstOrDefault(resp, "X-WHOIS-URL", "")
+	oldExtraAttributes := d.Get("extra_attributes").(map[string]interface{})
 
-	banner0 := columnFirstOrDefault(resp, "X-WHOIS-BANNER0", "")
-	banner1 := columnFirstOrDefault(resp, "X-WHOIS-BANNER1", "")
-	banner2 := columnFirstOrDefault(resp, "X-WHOIS-BANNER2", "")
+	// Read X- attributes
+	extraAttributes := make(map[string]interface{})
+	keys := resp.GetColumnKeys()
+	for _, k := range keys {
+		if len(k) < 3 || (k[0] != 'X' && k[0] != 'x') || k[1] != '-' {
+			continue
+		}
 
-	if banner2 != "" {
-		whois["banner"] = []string{banner0, banner1, banner2}
-	} else if banner1 != "" {
-		whois["banner"] = []string{banner0, banner1}
-	} else if banner0 != "" {
-		whois["banner"] = []string{banner0}
-	} else {
-		whois["banner"] = []string{}
+		n := strings.ToUpper(k[2:])
+
+		// Do not load unused X- attributes, there is too many to enforce using every one
+		_, ok := oldExtraAttributes[n]
+		if !ok {
+			continue
+		}
+
+		// Treat empty string as not present, functionally identical
+		v := columnFirstOrDefault(resp, k, "")
+		if v != "" {
+			extraAttributes[n] = v
+		}
 	}
+	d.Set("extra_attributes", extraAttributes)
 
-	d.Set("whois", []interface{}{whois})
+	// Read contacts
+	_, ok := d.GetOk("owner_contacts")
+	if ok {
+		d.Set("owner_contacts", resp.GetColumn("OWNERCONTACT").GetData())
+	}
+	_, ok = d.GetOk("admin_contacts")
+	if ok {
+		d.Set("admin_contacts", resp.GetColumn("ADMINCONTACT").GetData())
+	}
+	_, ok = d.GetOk("tech_contacts")
+	if ok {
+		d.Set("tech_contacts", resp.GetColumn("TECHCONTACT").GetData())
+	}
+	_, ok = d.GetOk("billing_contacts")
+	if ok {
+		d.Set("billing_contacts", resp.GetColumn("BILLINGCONTACT").GetData())
+	}
 
 	return diags
 }
