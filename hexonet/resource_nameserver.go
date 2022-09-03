@@ -108,10 +108,8 @@ func resourceNameserverRead(ctx context.Context, d *schema.ResourceData, m inter
 		return diags
 	}
 
-	ips := resp.GetColumn("IPADDRESS").GetData()
-
 	d.Set("name_server", d.Id())
-	d.Set("ip_addresses", ips)
+	d.Set("ip_addresses", resp.GetColumn("IPADDRESS").GetData())
 
 	return diags
 }

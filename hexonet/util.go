@@ -14,7 +14,21 @@ func handlePossibleErrorResponse(resp *response.Response) *diag.Diagnostic {
 
 	return &diag.Diagnostic{
 		Severity: diag.Error,
-		Summary:  fmt.Sprintf("Error in %s", resp.GetCommandPlain()),
-		Detail:   resp.Raw,
+		Summary:  fmt.Sprintf("Error %d in %s", resp.GetCode(), resp.GetCommandPlain()),
+		Detail:   resp.GetDescription(),
 	}
+}
+
+func columnFirstOrDefault(resp *response.Response, colName string, def string) string {
+	col := resp.GetColumn(colName)
+	if col == nil {
+		return def
+	}
+
+	data := col.GetData()
+	if len(data) < 1 {
+		return def
+	}
+
+	return data[0]
 }
