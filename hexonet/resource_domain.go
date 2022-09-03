@@ -22,6 +22,7 @@ func resourceDomain() *schema.Resource {
 			"domain": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"name_servers": {
 				Type:     schema.TypeList,
@@ -67,18 +68,6 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sch
 	}
 
 	return cl.Request(req)
-}
-
-func handlePossibleErrorResponse(resp *response.Response) *diag.Diagnostic {
-	if !resp.IsError() {
-		return nil
-	}
-
-	return &diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  fmt.Sprintf("Error in %s", resp.GetCommandPlain()),
-		Detail:   resp.Raw,
-	}
 }
 
 func resourceDomainCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
