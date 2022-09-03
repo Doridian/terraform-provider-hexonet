@@ -1,0 +1,4 @@
+/terraform-provider-hexonet
+*.exe
+.DS_Store
+
