@@ -86,18 +86,7 @@ func makeContactSchema(readOnly bool) map[string]*schema.Schema {
 	}
 
 	if readOnly {
-		for k, v := range res {
-			v.ForceNew = false
-			if k == "id" {
-				v.Optional = false
-				v.Required = true
-				v.Computed = false
-				continue
-			}
-			v.Optional = false
-			v.Required = false
-			v.Computed = true
-		}
+		makeSchemaReadOnly(res, []string{"id"})
 	}
 
 	return res

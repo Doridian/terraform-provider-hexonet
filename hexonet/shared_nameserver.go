@@ -44,18 +44,7 @@ func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
 	}
 
 	if readOnly {
-		for k, v := range res {
-			v.ForceNew = false
-			if k == "name_server" || k == "id" {
-				v.Optional = false
-				v.Required = true
-				v.Computed = false
-				continue
-			}
-			v.Optional = false
-			v.Required = false
-			v.Computed = true
-		}
+		makeSchemaReadOnly(res, []string{"id", "name_server"})
 	}
 
 	return res

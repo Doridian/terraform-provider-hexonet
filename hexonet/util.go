@@ -114,3 +114,26 @@ func handleExtraAttributesWrite(d *schema.ResourceData, req map[string]interface
 		req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = v
 	}
 }
+
+func makeSchemaReadOnly(res map[string]*schema.Schema, idFields []string) {
+	idFieldsMap := make(map[string]bool)
+	for _, idField := range idFields {
+		idFieldsMap[idField] = true
+	}
+
+	for k, v := range res {
+		v.ForceNew = false
+		if idFieldsMap[k] {
+			v.Optional = false
+			v.Required = true
+			v.Computed = false
+			continue
+		}
+		v.Default = nil
+		v.MinItems = 0
+		v.MaxItems = 0
+		v.Optional = false
+		v.Required = false
+		v.Computed = true
+	}
+}
