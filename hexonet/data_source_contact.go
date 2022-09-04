@@ -40,7 +40,7 @@ func (d dataSourceContact) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	data = kindContactRead(ctx, data, d.p.client, false, resp.Diagnostics)
+	data = kindContactRead(ctx, data, d.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -46,7 +46,7 @@ func (r resourceContact) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	data = kindContactRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindContactRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -66,7 +66,7 @@ func (r resourceContact) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	data = kindContactRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindContactRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -98,7 +98,7 @@ func (r resourceContact) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	data = kindContactRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindContactRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -46,7 +46,7 @@ func (r resourceNameServer) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindNameserverRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -66,7 +66,7 @@ func (r resourceNameServer) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindNameserverRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -98,7 +98,7 @@ func (r resourceNameServer) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindNameserverRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

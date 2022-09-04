@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -35,48 +34,75 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 		},
 		"transfer_lock": {
 			Type:     types.BoolType,
-			Optional: true,
+			Required: true,
 		},
 		"auth_code": {
 			Type:      types.StringType,
-			Computed:  true,
 			Sensitive: true,
+			Computed:  true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
 		},
 		"status": {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
 			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
 		},
 		"extra_attributes": {
 			Type: types.MapType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				NoDiffIfNull(),
+				NoDiffIfNullMapEntries(),
+			},
 		},
 		"owner_contacts": {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				NoDiffIfNull(),
+			},
 		},
 		"admin_contacts": {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				NoDiffIfNull(),
+			},
 		},
 		"tech_contacts": {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				NoDiffIfNull(),
+			},
 		},
 		"billing_contacts": {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				NoDiffIfNull(),
+			},
 		},
 	}
 
@@ -116,12 +142,12 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, domain Domain, 
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(domain.NameServers, oldDomain.NameServers, "NAMESERVER", req)
+		fillRequestArray(domain.NameServers, oldDomain.NameServers, "NAMESERVER", req, diag)
 
-		fillRequestArray(domain.OwnerContacts, oldDomain.OwnerContacts, "OWNERCONTACT", req)
-		fillRequestArray(domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req)
-		fillRequestArray(domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req)
-		fillRequestArray(domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req)
+		fillRequestArray(domain.OwnerContacts, oldDomain.OwnerContacts, "OWNERCONTACT", req, diag)
+		fillRequestArray(domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req, diag)
+		fillRequestArray(domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req, diag)
+		fillRequestArray(domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req, diag)
 
 		if !domain.TransferLock.Null && !domain.TransferLock.Unknown {
 			req["TRANSFERLOCK"] = boolToNumberStr(domain.TransferLock.Value)
@@ -135,19 +161,7 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, domain Domain, 
 	return resp
 }
 
-func stringListIfExists(oldVal types.List, resp *response.Response, prop string) types.List {
-	if oldVal.Null {
-		return types.List{
-			Null:     true,
-			ElemType: types.StringType,
-			Elems:    []attr.Value{},
-		}
-	}
-
-	return stringListToAttrList(columnOrDefault(resp, prop, []string{}))
-}
-
-func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient, addAll bool, diag diag.Diagnostics) Domain {
+func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient, diag diag.Diagnostics) Domain {
 	resp := makeDomainCommand(cl, CommandRead, domain, domain, diag)
 	if diag.HasError() {
 		return Domain{}
@@ -162,11 +176,11 @@ func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient,
 		Status:       stringListToAttrList(columnOrDefault(resp, "STATUS", []string{})),
 		AuthCode:     types.String{Value: columnFirstOrDefault(resp, "AUTH", "").(string)},
 
-		OwnerContacts:   stringListIfExists(domain.OwnerContacts, resp, "OWNERCONTACT"),
-		AdminContacts:   stringListIfExists(domain.AdminContacts, resp, "ADMINCONTACT"),
-		TechContacts:    stringListIfExists(domain.TechContacts, resp, "TECHCONTACT"),
-		BillingContacts: stringListIfExists(domain.BillingContacts, resp, "BILLINGCONTACT"),
+		OwnerContacts:   stringListToAttrList(columnOrDefault(resp, "OWNERCONTACT", []string{})),
+		AdminContacts:   stringListToAttrList(columnOrDefault(resp, "ADMINCONTACT", []string{})),
+		TechContacts:    stringListToAttrList(columnOrDefault(resp, "TECHCONTACT", []string{})),
+		BillingContacts: stringListToAttrList(columnOrDefault(resp, "BILLINGCONTACT", []string{})),
 
-		ExtraAttributes: handleExtraAttributesRead(domain.ExtraAttributes, resp, addAll),
+		ExtraAttributes: handleExtraAttributesRead(resp),
 	}
 }

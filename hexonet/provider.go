@@ -41,8 +41,8 @@ func (p *localProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnos
 			},
 			"mfa_token": {
 				Type:      types.StringType,
-				Optional:  true,
 				Sensitive: true,
+				Optional:  true,
 			},
 			"live": {
 				Type:     types.BoolType,

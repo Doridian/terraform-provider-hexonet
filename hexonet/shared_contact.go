@@ -19,6 +19,7 @@ func makeContactSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Computed: true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.RequiresReplace(),
+				resource.UseStateForUnknown(),
 			},
 		},
 		"title": {
@@ -79,13 +80,18 @@ func makeContactSchema(readOnly bool) map[string]tfsdk.Attribute {
 		},
 		"disclose": {
 			Type:     types.BoolType,
-			Optional: true,
+			Required: true,
 		},
 		"extra_attributes": {
 			Type: types.MapType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				NoDiffIfNull(),
+				NoDiffIfNullMapEntries(),
+			},
 		},
 	}
 
@@ -188,7 +194,7 @@ func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, contact Contac
 	return cl.Request(req)
 }
 
-func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClient, addAll bool, diag diag.Diagnostics) Contact {
+func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClient, diag diag.Diagnostics) Contact {
 	resp := makeContactCommand(cl, CommandRead, contact, contact, diag)
 	if diag.HasError() {
 		return Contact{}
@@ -215,8 +221,8 @@ func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClie
 		Fax:   autoBoxString(columnFirstOrDefault(resp, "FAX", nil)),
 		Email: autoBoxString(columnFirstOrDefault(resp, "EMAIL", nil)),
 
-		Disclose: autoBoxBoolNumberStr(columnFirstOrDefault(resp, "DISCLOSE", nil)),
+		Disclose: autoBoxBoolNumberStr(columnFirstOrDefault(resp, "DISCLOSE", "0")),
 
-		ExtraAttributes: handleExtraAttributesRead(contact.ExtraAttributes, resp, addAll),
+		ExtraAttributes: handleExtraAttributesRead(resp),
 	}
 }

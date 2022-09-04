@@ -34,19 +34,19 @@ func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	var data NameServer
+	var data Domain
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_ = makeNameServerCommand(r.p.client, CommandCreate, data, NameServer{}, resp.Diagnostics)
+	_ = makeDomainCommand(r.p.client, CommandCreate, data, Domain{}, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindDomainRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -66,7 +66,7 @@ func (r resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	data = kindDomainRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindDomainRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -98,7 +98,7 @@ func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	data = kindDomainRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	data = kindDomainRead(ctx, data, r.p.client, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

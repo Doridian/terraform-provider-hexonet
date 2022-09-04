@@ -67,7 +67,7 @@ func makeNameServerCommand(cl *apiclient.APIClient, cmd CommandType, ns NameServ
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(ns.IpAddresses, oldNs.IpAddresses, "IPADDRESS", req)
+		fillRequestArray(ns.IpAddresses, oldNs.IpAddresses, "IPADDRESS", req, diag)
 	}
 
 	resp := cl.Request(req)
@@ -75,7 +75,7 @@ func makeNameServerCommand(cl *apiclient.APIClient, cmd CommandType, ns NameServ
 	return resp
 }
 
-func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, addAll bool, diag diag.Diagnostics) NameServer {
+func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, diag diag.Diagnostics) NameServer {
 	resp := makeNameServerCommand(cl, CommandRead, ns, ns, diag)
 	if diag.HasError() {
 		return ns
