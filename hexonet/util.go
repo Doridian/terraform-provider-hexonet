@@ -155,7 +155,7 @@ func makeSchemaReadOnly(res map[string]tfsdk.Attribute, idField string) {
 }
 
 func makeNotConfiguredError(diag *diag.Diagnostics) {
-	diag.AddError("Provider not configure", "Please make sure the provider is configured correctly")
+	diag.AddError("Provider not configured", "Please make sure the provider is configured correctly")
 }
 
 func stringListToAttrList(elems []string) types.List {
@@ -164,8 +164,8 @@ func stringListToAttrList(elems []string) types.List {
 		Elems:    make([]attr.Value, 0, len(elems)),
 	}
 
-	for i, elem := range elems {
-		res.Elems[i] = types.String{Value: elem}
+	for _, elem := range elems {
+		res.Elems = append(res.Elems, types.String{Value: elem})
 	}
 
 	return res

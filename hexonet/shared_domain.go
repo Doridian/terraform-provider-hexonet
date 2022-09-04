@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
@@ -22,6 +23,9 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 		"domain": {
 			Type:     types.StringType,
 			Required: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.RequiresReplace(),
+			},
 		},
 		"name_servers": {
 			Type: types.ListType{
@@ -34,8 +38,9 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Optional: true,
 		},
 		"auth_code": {
-			Type:     types.StringType,
-			Computed: true,
+			Type:      types.StringType,
+			Computed:  true,
+			Sensitive: true,
 		},
 		"status": {
 			Type: types.ListType{
@@ -153,14 +158,14 @@ func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient,
 
 		NameServers: stringListToAttrList(columnOrDefault(resp, "NAMESERVER", []string{})),
 
-		TransferLock: types.Bool{Value: numberStrToBool(columnFirstOrDefault(resp, "TRANSFERLOCK", "0").(string))},
+		TransferLock: autoBoxBoolNumberStr(columnFirstOrDefault(resp, "TRANSFERLOCK", nil)),
 		Status:       stringListToAttrList(columnOrDefault(resp, "STATUS", []string{})),
 		AuthCode:     types.String{Value: columnFirstOrDefault(resp, "AUTH", "").(string)},
 
 		OwnerContacts:   stringListIfExists(domain.OwnerContacts, resp, "OWNERCONTACT"),
-		AdminContacts:   stringListIfExists(domain.OwnerContacts, resp, "ADMINCONTACT"),
-		TechContacts:    stringListIfExists(domain.OwnerContacts, resp, "TECHCONTACT"),
-		BillingContacts: stringListIfExists(domain.OwnerContacts, resp, "BILLINGCONTACT"),
+		AdminContacts:   stringListIfExists(domain.AdminContacts, resp, "ADMINCONTACT"),
+		TechContacts:    stringListIfExists(domain.TechContacts, resp, "TECHCONTACT"),
+		BillingContacts: stringListIfExists(domain.BillingContacts, resp, "BILLINGCONTACT"),
 
 		ExtraAttributes: handleExtraAttributesRead(domain.ExtraAttributes, resp, addAll),
 	}

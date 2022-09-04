@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
@@ -16,6 +17,9 @@ func makeContactSchema(readOnly bool) map[string]tfsdk.Attribute {
 		"id": {
 			Type:     types.StringType,
 			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.RequiresReplace(),
+			},
 		},
 		"title": {
 			Type:     types.StringType,
@@ -131,6 +135,12 @@ func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, contact Contac
 			diag.AddError("Main ID attribute unknwon or null", "id is null or unknown")
 			return nil
 		}
+
+		if !oldContact.ID.Null && !oldContact.ID.Unknown && oldContact.ID.Value != contact.ID.Value {
+			diag.AddError("Main ID attribute changed", fmt.Sprintf("id changed from %s to %s", oldContact.ID.Value, contact.ID.Value))
+			return nil
+		}
+
 		req["CONTACT"] = contact.ID.Value
 	}
 
@@ -198,6 +208,7 @@ func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClie
 		AddressLine2: autoBoxString(columnIndexOrDefault(resp, "STREET", nil, 1)),
 		City:         autoBoxString(columnFirstOrDefault(resp, "CITY", nil)),
 		ZIP:          autoBoxString(columnFirstOrDefault(resp, "ZIP", nil)),
+		State:        autoBoxString(columnFirstOrDefault(resp, "STATE", nil)),
 		Coutry:       autoBoxString(columnFirstOrDefault(resp, "COUNTRY", nil)),
 
 		Phone: autoBoxString(columnFirstOrDefault(resp, "PHONE", nil)),

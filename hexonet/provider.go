@@ -108,8 +108,6 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
-	//config.HighPerformance.
-
 	username := getValueOrDefaultToEnv(config.Username, "username", resp, false)
 	password := getValueOrDefaultToEnv(config.Password, "password", resp, false)
 	role := getValueOrDefaultToEnv(config.Role, "role", resp, true)
@@ -119,11 +117,15 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	live := true
 
 	if !config.HighPerformance.Null && !config.HighPerformance.Unknown {
-		highPerformance = config.Live.Value
+		highPerformance = config.HighPerformance.Value
 	}
 
 	if !config.Live.Null && !config.Live.Unknown {
 		live = config.Live.Value
+	}
+
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	c := apiclient.NewAPIClient()
@@ -153,4 +155,11 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	}
 
 	handlePossibleErrorResponse(res, resp.Diagnostics)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	p.client = c
+	p.configured = true
 }

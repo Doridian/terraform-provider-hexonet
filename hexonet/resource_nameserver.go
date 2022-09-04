@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -118,11 +119,15 @@ func (r resourceNameServer) Delete(ctx context.Context, req resource.DeleteReque
 	}
 
 	_ = makeNameServerCommand(r.p.client, CommandDelete, NameServer{
-		NameServer: dataOld.NameServer,
+		Host: dataOld.Host,
 	}, dataOld, resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	resp.State.RemoveResource(ctx)
+}
+
+func (r resourceNameServer) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("host"), req, resp)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
@@ -15,9 +16,12 @@ const MAX_IPADDRESS = 12
 
 func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 	res := map[string]tfsdk.Attribute{
-		"name_server": {
+		"host": {
 			Type:     types.StringType,
 			Required: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.RequiresReplace(),
+			},
 		},
 		"ip_addresses": {
 			Type: types.ListType{
@@ -40,26 +44,26 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 	}
 
 	if readOnly {
-		makeSchemaReadOnly(res, "name_server")
+		makeSchemaReadOnly(res, "host")
 	}
 
 	return res
 }
 
 type NameServer struct {
-	NameServer  types.String `tfsdk:"name_server"`
+	Host        types.String `tfsdk:"host"`
 	IpAddresses types.List   `tfsdk:"ip_addresses"`
 }
 
 func makeNameServerCommand(cl *apiclient.APIClient, cmd CommandType, ns NameServer, oldNs NameServer, diag diag.Diagnostics) *response.Response {
-	if ns.NameServer.Null || ns.NameServer.Unknown {
-		diag.AddError("Main ID attribute unknwon or null", "name_server is null or unknown")
+	if ns.Host.Null || ns.Host.Unknown {
+		diag.AddError("Main ID attribute unknwon or null", "host is null or unknown")
 		return nil
 	}
 
 	req := map[string]interface{}{
 		"COMMAND":    fmt.Sprintf("%sNameserver", cmd),
-		"NAMESERVER": ns.NameServer.Value,
+		"NAMESERVER": ns.Host.Value,
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
@@ -78,7 +82,7 @@ func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APICli
 	}
 
 	return NameServer{
-		NameServer: types.String{Value: columnFirstOrDefault(resp, "HOST", "").(string)},
+		Host: types.String{Value: columnFirstOrDefault(resp, "HOST", "").(string)},
 
 		IpAddresses: stringListToAttrList(resp.GetColumn("IPADDRESS").GetData()),
 	}
