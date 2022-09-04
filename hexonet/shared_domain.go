@@ -27,6 +27,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
+			Required: true,
 		},
 		"transfer_lock": {
 			Type:     types.BoolType,

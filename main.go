@@ -8,5 +8,7 @@ import (
 )
 
 func main() {
-	providerserver.Serve(context.Background(), hexonet.New, providerserver.ServeOpts{})
+	providerserver.Serve(context.Background(), hexonet.New, providerserver.ServeOpts{
+		Address: "registry.terraform.io/doridian/hexonet",
+	})
 }
