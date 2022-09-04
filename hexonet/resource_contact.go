@@ -26,7 +26,7 @@ func resourceContactCreate(ctx context.Context, d *schema.ResourceData, m interf
 
 	var diags diag.Diagnostics
 
-	resp := makeContactCommand(cl, "AddContact", true, d)
+	resp := makeContactCommand(cl, CommandCreate, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)
@@ -48,7 +48,7 @@ func resourceContactUpdate(ctx context.Context, d *schema.ResourceData, m interf
 
 	var diags diag.Diagnostics
 
-	resp := makeContactCommand(cl, "ModifyContact", true, d)
+	resp := makeContactCommand(cl, CommandUpdate, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)
@@ -63,7 +63,7 @@ func resourceContactDelete(ctx context.Context, d *schema.ResourceData, m interf
 
 	var diags diag.Diagnostics
 
-	resp := makeContactCommand(cl, "DeleteContact", false, d)
+	resp := makeContactCommand(cl, CommandDelete, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)

@@ -26,7 +26,7 @@ func resourceDomainCreate(ctx context.Context, d *schema.ResourceData, m interfa
 
 	var diags diag.Diagnostics
 
-	resp := makeDomainCommand(cl, "AddDomain", true, d)
+	resp := makeDomainCommand(cl, CommandCreate, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)
@@ -45,7 +45,7 @@ func resourceDomainUpdate(ctx context.Context, d *schema.ResourceData, m interfa
 
 	var diags diag.Diagnostics
 
-	resp := makeDomainCommand(cl, "ModifyDomain", true, d)
+	resp := makeDomainCommand(cl, CommandUpdate, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)
@@ -60,7 +60,7 @@ func resourceDomainDelete(ctx context.Context, d *schema.ResourceData, m interfa
 
 	var diags diag.Diagnostics
 
-	resp := makeDomainCommand(cl, "DeleteDomain", false, d)
+	resp := makeDomainCommand(cl, CommandDelete, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)

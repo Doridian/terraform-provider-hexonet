@@ -26,7 +26,7 @@ func resourceNameserverCreate(ctx context.Context, d *schema.ResourceData, m int
 
 	var diags diag.Diagnostics
 
-	resp := makeNameserverCommand(cl, "AddNameserver", true, d)
+	resp := makeNameserverCommand(cl, CommandCreate, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)
@@ -45,7 +45,7 @@ func resourceNameserverUpdate(ctx context.Context, d *schema.ResourceData, m int
 
 	var diags diag.Diagnostics
 
-	resp := makeNameserverCommand(cl, "ModifyNameserver", true, d)
+	resp := makeNameserverCommand(cl, CommandUpdate, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)
@@ -60,7 +60,7 @@ func resourceNameserverDelete(ctx context.Context, d *schema.ResourceData, m int
 
 	var diags diag.Diagnostics
 
-	resp := makeNameserverCommand(cl, "DeleteNameserver", false, d)
+	resp := makeNameserverCommand(cl, CommandDelete, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)

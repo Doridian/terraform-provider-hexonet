@@ -9,6 +9,15 @@ import (
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
+type CommandType = string
+
+const (
+	CommandCreate CommandType = "Add"
+	CommandRead   CommandType = "Status"
+	CommandUpdate CommandType = "Modify"
+	CommandDelete CommandType = "Delete"
+)
+
 func handlePossibleErrorResponse(resp *response.Response) *diag.Diagnostic {
 	if !resp.IsError() {
 		return nil

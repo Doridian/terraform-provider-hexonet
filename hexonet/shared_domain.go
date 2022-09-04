@@ -2,6 +2,7 @@ package hexonet
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -93,7 +94,7 @@ func makeDomainSchema(readOnly bool) map[string]*schema.Schema {
 	return res
 }
 
-func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *schema.ResourceData) *response.Response {
+func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.ResourceData) *response.Response {
 	domain := d.Get("domain").(string)
 	if domain == "" {
 		domain = d.Id()
@@ -102,11 +103,11 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sch
 	}
 
 	req := map[string]interface{}{
-		"COMMAND": cmd,
+		"COMMAND": fmt.Sprintf("%sDomain", cmd),
 		"DOMAIN":  domain,
 	}
 
-	if addData {
+	if cmd == CommandCreate || cmd == CommandUpdate {
 		fillRequestArray(d.Get("name_servers").([]interface{}), "NAMESERVER", req, MAX_NAMESERVERS, false)
 
 		fillRequestArray(d.Get("owner_contacts").([]interface{}), "OWNERCONTACT", req, 1, false)
@@ -127,7 +128,7 @@ func kindDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}, 
 
 	var diags diag.Diagnostics
 
-	resp := makeDomainCommand(cl, "StatusDomain", false, d)
+	resp := makeDomainCommand(cl, CommandRead, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)

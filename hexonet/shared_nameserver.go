@@ -2,6 +2,7 @@ package hexonet
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -47,7 +48,7 @@ func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
 	return res
 }
 
-func makeNameserverCommand(cl *apiclient.APIClient, cmd string, addData bool, d *schema.ResourceData) *response.Response {
+func makeNameserverCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.ResourceData) *response.Response {
 	nameserver := d.Get("name_server").(string)
 	if nameserver == "" {
 		nameserver = d.Id()
@@ -56,11 +57,11 @@ func makeNameserverCommand(cl *apiclient.APIClient, cmd string, addData bool, d 
 	}
 
 	req := map[string]interface{}{
-		"COMMAND":    cmd,
+		"COMMAND":    fmt.Sprintf("%sNameserver", cmd),
 		"NAMESERVER": nameserver,
 	}
 
-	if addData {
+	if cmd == CommandCreate || cmd == CommandUpdate {
 		fillRequestArray(d.Get("ip_addresses").([]interface{}), "IPADDRESS", req, MAX_IPADDRESS, true)
 	}
 
@@ -72,7 +73,7 @@ func kindNameserverRead(ctx context.Context, d *schema.ResourceData, m interface
 
 	var diags diag.Diagnostics
 
-	resp := makeNameserverCommand(cl, "StatusNameserver", false, d)
+	resp := makeNameserverCommand(cl, CommandRead, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)

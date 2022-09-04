@@ -93,15 +93,12 @@ func makeContactSchema(readOnly bool) map[string]*schema.Schema {
 	return res
 }
 
-func makeContactCommand(cl *apiclient.APIClient, cmd string, addData bool, d *schema.ResourceData) *response.Response {
+func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.ResourceData) *response.Response {
 	req := map[string]interface{}{
-		"COMMAND": cmd,
+		"COMMAND": fmt.Sprintf("%sContact", cmd),
 	}
 
-	isAdd := cmd == "AddContact"
-	isModify := cmd == "ModifyContact"
-
-	if isAdd {
+	if cmd == CommandCreate {
 		req["NEW"] = "1"
 	} else {
 		id := d.Get("id").(string)
@@ -113,7 +110,7 @@ func makeContactCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sc
 		req["CONTACT"] = id
 	}
 
-	if addData {
+	if cmd == CommandCreate || cmd == CommandUpdate {
 		optionals := []string{"TITLE", "MIDDLENAME", "ORGANIZATION", "STATE", "FAX"}
 
 		req["TITLE"] = d.Get("title").(string)
@@ -136,7 +133,7 @@ func makeContactCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sc
 
 		req["DISCLOSE"] = boolToNumberStr(d.Get("disclose").(bool))
 
-		if isModify {
+		if cmd == CommandUpdate {
 			i := 0
 			for _, optional := range optionals {
 				if req[optional] != "" {
@@ -160,7 +157,7 @@ func kindContactRead(ctx context.Context, d *schema.ResourceData, m interface{},
 
 	var diags diag.Diagnostics
 
-	resp := makeContactCommand(cl, "StatusContact", false, d)
+	resp := makeContactCommand(cl, CommandRead, d)
 	respDiag := handlePossibleErrorResponse(resp)
 	if respDiag != nil {
 		diags = append(diags, *respDiag)
