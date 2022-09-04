@@ -115,15 +115,10 @@ func handleExtraAttributesWrite(d *schema.ResourceData, req map[string]interface
 	}
 }
 
-func makeSchemaReadOnly(res map[string]*schema.Schema, idFields []string) {
-	idFieldsMap := make(map[string]bool)
-	for _, idField := range idFields {
-		idFieldsMap[idField] = true
-	}
-
+func makeSchemaReadOnly(res map[string]*schema.Schema, idField string) {
 	for k, v := range res {
 		v.ForceNew = false
-		if idFieldsMap[k] {
+		if idField == k {
 			v.Optional = false
 			v.Required = true
 			v.Computed = false

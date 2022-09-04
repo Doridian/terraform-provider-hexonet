@@ -44,7 +44,7 @@ func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
 	}
 
 	if readOnly {
-		makeSchemaReadOnly(res, []string{"id", "name_server"})
+		makeSchemaReadOnly(res, "name_server")
 	}
 
 	return res

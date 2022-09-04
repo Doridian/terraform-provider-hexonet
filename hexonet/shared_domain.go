@@ -90,7 +90,7 @@ func makeDomainSchema(readOnly bool) map[string]*schema.Schema {
 	}
 
 	if readOnly {
-		makeSchemaReadOnly(res, []string{"id", "domain"})
+		makeSchemaReadOnly(res, "domain")
 	}
 
 	return res
