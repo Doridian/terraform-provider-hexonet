@@ -166,6 +166,9 @@ func kindContactRead(ctx context.Context, d *schema.ResourceData, m interface{},
 
 	id := columnFirstOrDefault(resp, "ID", "").(string)
 	d.SetId(id)
+	if id == "" {
+		return diags
+	}
 
 	d.Set("title", columnFirstOrDefault(resp, "TITLE", nil))
 	d.Set("first_name", columnFirstOrDefault(resp, "FIRSTNAME", nil))

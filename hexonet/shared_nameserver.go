@@ -82,6 +82,9 @@ func kindNameserverRead(ctx context.Context, d *schema.ResourceData, m interface
 
 	id := columnFirstOrDefault(resp, "HOST", "").(string)
 	d.SetId(id)
+	if id == "" {
+		return diags
+	}
 	d.Set("name_server", id)
 
 	d.Set("ip_addresses", resp.GetColumn("IPADDRESS").GetData())
