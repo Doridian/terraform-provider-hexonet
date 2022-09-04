@@ -48,6 +48,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"hexonet_domain":     resourceDomain(),
 			"hexonet_nameserver": resourceNameserver(),
+			"hexonet_contact":    resourceContact(),
 		},
 		DataSourcesMap:       map[string]*schema.Resource{},
 		ConfigureContextFunc: providerConfigure,

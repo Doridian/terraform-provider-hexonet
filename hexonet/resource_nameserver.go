@@ -54,14 +54,14 @@ func makeNameserverCommand(cl *apiclient.APIClient, cmd string, addData bool, d 
 	nameserver := d.Get("name_server").(string)
 	if nameserver == "" {
 		nameserver = d.Id()
+	} else {
+		d.SetId(nameserver)
 	}
 
 	req := map[string]interface{}{
 		"COMMAND":    cmd,
 		"NAMESERVER": nameserver,
 	}
-
-	d.SetId(nameserver)
 
 	if addData {
 		fillRequestArray(d.Get("ip_addresses").([]interface{}), "IPADDRESS", req, MAX_IPADDRESS, true)
@@ -97,7 +97,10 @@ func resourceNameserverRead(ctx context.Context, d *schema.ResourceData, m inter
 		return diags
 	}
 
-	d.Set("name_server", d.Id())
+	id := columnFirstOrDefault(resp, "HOST", nil).(string)
+	d.SetId(id)
+	d.Set("name_server", id)
+
 	d.Set("ip_addresses", resp.GetColumn("IPADDRESS").GetData())
 
 	return diags

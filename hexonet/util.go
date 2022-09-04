@@ -19,18 +19,22 @@ func handlePossibleErrorResponse(resp *response.Response) *diag.Diagnostic {
 	}
 }
 
-func columnFirstOrDefault(resp *response.Response, colName string, def string) string {
+func columnIndexOrDefault(resp *response.Response, colName string, def interface{}, idx int) interface{} {
 	col := resp.GetColumn(colName)
 	if col == nil {
 		return def
 	}
 
 	data := col.GetData()
-	if len(data) < 1 {
+	if len(data) <= idx {
 		return def
 	}
 
-	return data[0]
+	return data[idx]
+}
+
+func columnFirstOrDefault(resp *response.Response, colName string, def interface{}) interface{} {
+	return columnIndexOrDefault(resp, colName, def, 0)
 }
 
 func fillRequestArray(list []interface{}, prefix string, req map[string]interface{}, maxEntries int, deleteOnEmpty bool) {

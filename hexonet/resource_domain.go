@@ -102,14 +102,14 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sch
 	domain := d.Get("domain").(string)
 	if domain == "" {
 		domain = d.Id()
+	} else {
+		d.SetId(domain)
 	}
 
 	req := map[string]interface{}{
 		"COMMAND": cmd,
 		"DOMAIN":  domain,
 	}
-
-	d.SetId(domain)
 
 	if addData {
 		fillRequestArray(d.Get("name_servers").([]interface{}), "NAMESERVER", req, MAX_NAMESERVERS, false)
@@ -180,11 +180,18 @@ func resourceDomainRead(ctx context.Context, d *schema.ResourceData, m interface
 	}
 
 	// Load basic information
-	d.Set("domain", d.Id())
+	id := columnFirstOrDefault(resp, "ID", nil).(string)
+	d.SetId(id)
+	d.Set("domain", id)
+
 	d.Set("name_servers", resp.GetColumn("NAMESERVER").GetData())
-	d.Set("transfer_lock", columnFirstOrDefault(resp, "TRANSFERLOCK", "0") == "1")
+	d.Set("transfer_lock", columnFirstOrDefault(resp, "TRANSFERLOCK", "0").(string) == "1")
 	d.Set("status", resp.GetColumn("STATUS").GetData())
-	d.Set("auth_code", columnFirstOrDefault(resp, "AUTH,", ""))
+
+	authCode := columnFirstOrDefault(resp, "AUTH", nil)
+	if authCode != nil {
+		d.Set("auth_code", authCode.(string))
+	}
 
 	oldExtraAttributes := d.Get("extra_attributes").(map[string]interface{})
 
@@ -205,9 +212,9 @@ func resourceDomainRead(ctx context.Context, d *schema.ResourceData, m interface
 		}
 
 		// Treat empty string as not present, functionally identical
-		v := columnFirstOrDefault(resp, k, "")
-		if v != "" {
-			extraAttributes[n] = v
+		v := columnFirstOrDefault(resp, k, nil)
+		if v != nil && v != "" {
+			extraAttributes[n] = v.(string)
 		}
 	}
 	d.Set("extra_attributes", extraAttributes)
