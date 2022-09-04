@@ -12,10 +12,10 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"highperformance": {
+			"high_performance": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_HIGHPERFORMANCE", false),
+				DefaultFunc: schema.EnvDefaultFunc("HEXONET_HIGH_PERFORMANCE", false),
 			},
 			"username": {
 				Type:        schema.TypeString,
@@ -33,11 +33,11 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("HEXONET_PASSWORD", nil),
 			},
-			"mfatoken": {
+			"mfa_token": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_MFATOKEN", nil),
+				DefaultFunc: schema.EnvDefaultFunc("HEXONET_MFA_TOKEN", nil),
 			},
 			"live": {
 				Type:        schema.TypeBool,
@@ -63,8 +63,8 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
 	role := d.Get("role").(string)
-	mfatoken := d.Get("mfatoken").(string)
-	highperformance := d.Get("highperformance").(bool)
+	mfatoken := d.Get("mfa_token").(string)
+	highperformance := d.Get("high_performance").(bool)
 	live := d.Get("live").(bool)
 
 	var diags diag.Diagnostics
