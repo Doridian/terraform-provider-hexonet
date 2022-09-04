@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -28,6 +29,9 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Required: true,
+			Validators: []tfsdk.AttributeValidator{
+				listvalidator.ValuesAre(IPAddressValidator{}),
+			},
 			/*Elem: &tfsdk.Schema{
 				Type: tfsdk.TypeString,
 				DiffSuppressFunc: func(k, old, new string, d *tfsdk.ResourceData) bool {
