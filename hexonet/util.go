@@ -2,8 +2,10 @@ package hexonet
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
@@ -51,5 +53,64 @@ func fillRequestArray(list []interface{}, prefix string, req map[string]interfac
 	for listIdx < maxEntries {
 		req[fmt.Sprintf("%s%d", prefix, listIdx)] = ""
 		listIdx++
+	}
+}
+
+func boolToNumberStr(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}
+
+func numberStrToBool(str string) bool {
+	return str == "1"
+}
+
+func handleExtraAttributesRead(d *schema.ResourceData, resp *response.Response) {
+	oldExtraAttributes := d.Get("extra_attributes").(map[string]interface{})
+	extraAttributes := make(map[string]interface{})
+	keys := resp.GetColumnKeys()
+	for _, k := range keys {
+		if len(k) < 3 || (k[0] != 'X' && k[0] != 'x') || k[1] != '-' {
+			continue
+		}
+
+		n := strings.ToUpper(k[2:])
+
+		// Do not load unused X- attributes, there is too many to enforce using every one
+		_, ok := oldExtraAttributes[n]
+		if !ok {
+			continue
+		}
+
+		// Treat empty string as not present, functionally identical
+		v := columnFirstOrDefault(resp, k, nil)
+		if v != nil && v != "" {
+			extraAttributes[n] = v.(string)
+		}
+	}
+	d.Set("extra_attributes", extraAttributes)
+}
+
+func handleExtraAttributesWrite(d *schema.ResourceData, req map[string]interface{}) {
+	extraAttributesOld, extraAttributesNew := d.GetChange("extra_attributes")
+	extraAttributes := extraAttributesNew.(map[string]interface{})
+
+	// Get all the previous attributes and set them to empty string (remove)
+	// That way, if they are not in the current config, this will clear them correctly
+	if extraAttributesOld != nil {
+		extraAttributesOldMap := extraAttributesOld.(map[string]interface{})
+		for k := range extraAttributesOldMap {
+			req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = ""
+		}
+	}
+
+	for k, v := range extraAttributes {
+		// Treat empty string as un-set
+		if v == "" {
+			continue
+		}
+		req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = v
 	}
 }

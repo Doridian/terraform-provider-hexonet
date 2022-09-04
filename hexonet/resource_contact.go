@@ -73,6 +73,18 @@ func resourceContact() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"disclose": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"extra_attributes": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -115,6 +127,8 @@ func makeContactCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sc
 		req["FAX"] = d.Get("fax").(string)
 		req["EMAIL"] = d.Get("email").(string)
 
+		req["DISCLOSE"] = boolToNumberStr(d.Get("disclose").(bool))
+
 		if isModify {
 			i := 0
 			for _, optional := range optionals {
@@ -127,6 +141,8 @@ func makeContactCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sc
 				i++
 			}
 		}
+
+		handleExtraAttributesWrite(d, req)
 	}
 
 	return cl.Request(req)
@@ -183,6 +199,10 @@ func resourceContactRead(ctx context.Context, d *schema.ResourceData, m interfac
 	d.Set("phone", columnFirstOrDefault(resp, "PHONE", nil))
 	d.Set("fax", columnFirstOrDefault(resp, "FAX", nil))
 	d.Set("email", columnFirstOrDefault(resp, "EMAIL", nil))
+
+	d.Set("disclose", numberStrToBool(columnFirstOrDefault(resp, "DISCLOSE", "0").(string)))
+
+	handleExtraAttributesRead(d, resp)
 
 	return diags
 }

@@ -2,8 +2,6 @@ package hexonet
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -119,34 +117,9 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *sch
 		fillRequestArray(d.Get("tech_contacts").([]interface{}), "TECHCONTACT", req, MAX_CONTACTS, false)
 		fillRequestArray(d.Get("billing_contacts").([]interface{}), "BILLINGCONTACT", req, MAX_CONTACTS, true)
 
-		transferLock := d.Get("transfer_lock")
-		if transferLock != nil {
-			transferLockInt := "0"
-			if transferLock == true {
-				transferLockInt = "1"
-			}
-			req["TRANSFERLOCK"] = transferLockInt
-		}
+		req["TRANSFERLOCK"] = boolToNumberStr(d.Get("transfer_lock").(bool))
 
-		extraAttributesOld, extraAttributesNew := d.GetChange("extra_attributes")
-		extraAttributes := extraAttributesNew.(map[string]interface{})
-
-		// Get all the previous attributes and set them to empty string (remove)
-		// That way, if they are not in the current config, this will clear them correctly
-		if extraAttributesOld != nil {
-			extraAttributesOldMap := extraAttributesOld.(map[string]interface{})
-			for k := range extraAttributesOldMap {
-				req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = ""
-			}
-		}
-
-		for k, v := range extraAttributes {
-			// Treat empty string as un-set
-			if v == "" {
-				continue
-			}
-			req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = v
-		}
+		handleExtraAttributesWrite(d, req)
 	}
 
 	return cl.Request(req)
@@ -185,7 +158,7 @@ func resourceDomainRead(ctx context.Context, d *schema.ResourceData, m interface
 	d.Set("domain", id)
 
 	d.Set("name_servers", resp.GetColumn("NAMESERVER").GetData())
-	d.Set("transfer_lock", columnFirstOrDefault(resp, "TRANSFERLOCK", "0").(string) == "1")
+	d.Set("transfer_lock", numberStrToBool(columnFirstOrDefault(resp, "TRANSFERLOCK", "0").(string)))
 	d.Set("status", resp.GetColumn("STATUS").GetData())
 
 	authCode := columnFirstOrDefault(resp, "AUTH", nil)
@@ -193,31 +166,7 @@ func resourceDomainRead(ctx context.Context, d *schema.ResourceData, m interface
 		d.Set("auth_code", authCode.(string))
 	}
 
-	oldExtraAttributes := d.Get("extra_attributes").(map[string]interface{})
-
-	// Read X- attributes
-	extraAttributes := make(map[string]interface{})
-	keys := resp.GetColumnKeys()
-	for _, k := range keys {
-		if len(k) < 3 || (k[0] != 'X' && k[0] != 'x') || k[1] != '-' {
-			continue
-		}
-
-		n := strings.ToUpper(k[2:])
-
-		// Do not load unused X- attributes, there is too many to enforce using every one
-		_, ok := oldExtraAttributes[n]
-		if !ok {
-			continue
-		}
-
-		// Treat empty string as not present, functionally identical
-		v := columnFirstOrDefault(resp, k, nil)
-		if v != nil && v != "" {
-			extraAttributes[n] = v.(string)
-		}
-	}
-	d.Set("extra_attributes", extraAttributes)
+	handleExtraAttributesRead(d, resp)
 
 	// Read contacts
 	_, ok := d.GetOk("owner_contacts")
