@@ -62,7 +62,7 @@ func makeNameserverCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.R
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(d.Get("ip_addresses").([]interface{}), "IPADDRESS", req, MAX_IPADDRESS, true)
+		fillRequestArray(d, "ip_addresses", "IPADDRESS", req, MAX_IPADDRESS)
 	}
 
 	return cl.Request(req)

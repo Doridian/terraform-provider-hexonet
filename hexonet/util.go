@@ -44,14 +44,25 @@ func columnIndexOrDefault(resp *response.Response, colName string, def interface
 	return data[idx]
 }
 
+func columnOrDefault(resp *response.Response, colName string, def []string) []string {
+	col := resp.GetColumn(colName)
+	if col == nil {
+		return def
+	}
+	return col.GetData()
+}
+
 func columnFirstOrDefault(resp *response.Response, colName string, def interface{}) interface{} {
 	return columnIndexOrDefault(resp, colName, def, 0)
 }
 
-func fillRequestArray(list []interface{}, prefix string, req map[string]interface{}, maxEntries int, deleteOnEmpty bool) {
-	if len(list) < 1 && !deleteOnEmpty {
+func fillRequestArray(d *schema.ResourceData, key string, prefix string, req map[string]interface{}, maxEntries int) {
+	listRaw, ok := d.GetOkExists(key)
+	if !ok {
 		return
 	}
+
+	list := listRaw.([]interface{})
 
 	listIdx := 0
 	for _, item := range list {
@@ -59,9 +70,13 @@ func fillRequestArray(list []interface{}, prefix string, req map[string]interfac
 		listIdx++
 	}
 
-	for listIdx < maxEntries {
-		req[fmt.Sprintf("%s%d", prefix, listIdx)] = ""
-		listIdx++
+	listOldRaw, _ := d.GetChange(key)
+	if listOldRaw != nil {
+		listOld := listOldRaw.([]interface{})
+		for listIdx < maxEntries && listIdx < len(listOld) {
+			req[fmt.Sprintf("DEL%s%d", prefix, listIdx)] = listOld[listIdx]
+			listIdx++
+		}
 	}
 }
 

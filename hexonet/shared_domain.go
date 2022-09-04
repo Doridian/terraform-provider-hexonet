@@ -108,12 +108,12 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.Resou
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(d.Get("name_servers").([]interface{}), "NAMESERVER", req, MAX_NAMESERVERS, false)
+		fillRequestArray(d, "name_servers", "NAMESERVER", req, MAX_NAMESERVERS)
 
-		fillRequestArray(d.Get("owner_contacts").([]interface{}), "OWNERCONTACT", req, 1, false)
-		fillRequestArray(d.Get("admin_contacts").([]interface{}), "ADMINCONTACT", req, MAX_CONTACTS, false)
-		fillRequestArray(d.Get("tech_contacts").([]interface{}), "TECHCONTACT", req, MAX_CONTACTS, false)
-		fillRequestArray(d.Get("billing_contacts").([]interface{}), "BILLINGCONTACT", req, MAX_CONTACTS, true)
+		fillRequestArray(d, "owner_contacts", "OWNERCONTACT", req, 1)
+		fillRequestArray(d, "admin_contacts", "ADMINCONTACT", req, MAX_CONTACTS)
+		fillRequestArray(d, "tech_contacts", "TECHCONTACT", req, MAX_CONTACTS)
+		fillRequestArray(d, "billing_contacts", "BILLINGCONTACT", req, MAX_CONTACTS)
 
 		req["TRANSFERLOCK"] = boolToNumberStr(d.Get("transfer_lock").(bool))
 
@@ -143,9 +143,13 @@ func kindDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}, 
 	}
 	d.Set("domain", id)
 
-	d.Set("name_servers", resp.GetColumn("NAMESERVER").GetData())
+	_, ok := d.GetOkExists("name_servers")
+	if ok || addAll {
+		d.Set("name_servers", columnOrDefault(resp, "NAMESERVER", []string{}))
+	}
+
 	d.Set("transfer_lock", numberStrToBool(columnFirstOrDefault(resp, "TRANSFERLOCK", "0").(string)))
-	d.Set("status", resp.GetColumn("STATUS").GetData())
+	d.Set("status", columnOrDefault(resp, "STATUS", []string{}))
 
 	authCode := columnFirstOrDefault(resp, "AUTH", nil)
 	if authCode != nil {
@@ -155,21 +159,21 @@ func kindDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}, 
 	handleExtraAttributesRead(d, resp, addAll)
 
 	// Read contacts
-	_, ok := d.GetOk("owner_contacts")
+	_, ok = d.GetOkExists("owner_contacts")
 	if ok || addAll {
-		d.Set("owner_contacts", resp.GetColumn("OWNERCONTACT").GetData())
+		d.Set("owner_contacts", columnOrDefault(resp, "OWNERCONTACT", []string{}))
 	}
-	_, ok = d.GetOk("admin_contacts")
+	_, ok = d.GetOkExists("admin_contacts")
 	if ok || addAll {
-		d.Set("admin_contacts", resp.GetColumn("ADMINCONTACT").GetData())
+		d.Set("admin_contacts", columnOrDefault(resp, "ADMINCONTACT", []string{}))
 	}
-	_, ok = d.GetOk("tech_contacts")
+	_, ok = d.GetOkExists("tech_contacts")
 	if ok || addAll {
-		d.Set("tech_contacts", resp.GetColumn("TECHCONTACT").GetData())
+		d.Set("tech_contacts", columnOrDefault(resp, "TECHCONTACT", []string{}))
 	}
-	_, ok = d.GetOk("billing_contacts")
+	_, ok = d.GetOkExists("billing_contacts")
 	if ok || addAll {
-		d.Set("billing_contacts", resp.GetColumn("BILLINGCONTACT").GetData())
+		d.Set("billing_contacts", columnOrDefault(resp, "BILLINGCONTACT", []string{}))
 	}
 
 	return diags
