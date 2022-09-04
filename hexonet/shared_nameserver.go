@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -15,6 +14,8 @@ import (
 )
 
 const MAX_IPADDRESS = 12
+
+var ipAddressType = utils.IPAddressType(true, true)
 
 func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 	res := map[string]tfsdk.Attribute{
@@ -26,12 +27,10 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 			},
 		},
 		"ip_addresses": {
-			Type: types.ListType{
-				ElemType: &utils.IPAddressType{},
-			},
-			Required: true,
+			Type:       utils.ValidatedListType(ipAddressType),
+			Required:   true,
 			Validators: []tfsdk.AttributeValidator{
-				listvalidator.SizeBetween(1, MAX_IPADDRESS),
+				//listvalidator.SizeBetween(1, MAX_IPADDRESS),
 			},
 		},
 	}
@@ -44,8 +43,8 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 }
 
 type NameServer struct {
-	Host        types.String `tfsdk:"host"`
-	IpAddresses types.List   `tfsdk:"ip_addresses"`
+	Host        types.String         `tfsdk:"host"`
+	IpAddresses *utils.ValidatedList `tfsdk:"ip_addresses"`
 }
 
 func makeNameServerCommand(cl *apiclient.APIClient, cmd utils.CommandType, ns NameServer, oldNs NameServer, diag diag.Diagnostics) *response.Response {
@@ -60,12 +59,30 @@ func makeNameServerCommand(cl *apiclient.APIClient, cmd utils.CommandType, ns Na
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
-		utils.FillRequestArray(ns.IpAddresses, oldNs.IpAddresses, "IPADDRESS", req, diag)
+		utils.FillRequestArray(ns.IpAddresses.List, oldNs.IpAddresses.List, "IPADDRESS", req, diag)
 	}
 
 	resp := cl.Request(req)
 	utils.HandlePossibleErrorResponse(resp, diag)
 	return resp
+}
+
+func stringListToIPAddrAttrList(elems []string, diag diag.Diagnostics) *utils.ValidatedList {
+	res := utils.ValidatedListType(ipAddressType).NewList()
+
+	for _, elem := range elems {
+		ip, err := ipAddressType.IPFromString(elem)
+		if err != nil {
+			diag.AddError(
+				"IP Address Read Validation Error",
+				err.Error(),
+			)
+			continue
+		}
+		res.Elems = append(res.Elems, ip)
+	}
+
+	return res
 }
 
 func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, diag diag.Diagnostics) NameServer {
@@ -77,6 +94,6 @@ func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APICli
 	return NameServer{
 		Host: types.String{Value: utils.ColumnFirstOrDefault(resp, "HOST", "").(string)},
 
-		IpAddresses: utils.StringListToAttrList(resp.GetColumn("IPADDRESS").GetData()),
+		IpAddresses: stringListToIPAddrAttrList(resp.GetColumn("IPADDRESS").GetData(), diag),
 	}
 }

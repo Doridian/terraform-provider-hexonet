@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 
@@ -13,28 +14,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-type IPAddressType struct{}
+type ipAddressType struct {
+	AllowIPv4 bool
+	AllowIPv6 bool
+}
 
-var _ xattr.TypeWithValidate = &IPAddressType{}
+func IPAddressType(allowIPv4 bool, allowIPv6 bool) *ipAddressType {
+	if !allowIPv4 && !allowIPv6 {
+		panic(errors.New("must set at least one of allowIPv4 or allowIPv6"))
+	}
 
-func (t *IPAddressType) ApplyTerraform5AttributePathStep(step tftypes.AttributePathStep) (interface{}, error) {
+	return &ipAddressType{
+		AllowIPv4: allowIPv4,
+		AllowIPv6: allowIPv6,
+	}
+}
+
+var _ xattr.TypeWithValidate = &ipAddressType{}
+
+func (t *ipAddressType) ApplyTerraform5AttributePathStep(step tftypes.AttributePathStep) (interface{}, error) {
 	return types.StringType.ApplyTerraform5AttributePathStep(step)
 }
 
-func (t *IPAddressType) Equal(typ attr.Type) bool {
-	_, ok := typ.(*IPAddressType)
-	return ok
+func (t *ipAddressType) Equal(typ attr.Type) bool {
+	other, ok := typ.(*ipAddressType)
+	if !ok {
+		return false
+	}
+	return other.AllowIPv4 == t.AllowIPv4 && other.AllowIPv6 == t.AllowIPv6
 }
 
-func (t *IPAddressType) String() string {
-	return "IPAddress"
+func (t *ipAddressType) String() string {
+	if t.AllowIPv4 {
+		if t.AllowIPv6 {
+			return "IPAddress"
+		}
+		return "IPv4Address"
+	}
+	// t.AllowIPv6 must be true here due to check in "IPAddressType(...)"
+	return "IPv6Address"
 }
 
-func (t *IPAddressType) TerraformType(ctx context.Context) tftypes.Type {
+func (t *ipAddressType) TerraformType(ctx context.Context) tftypes.Type {
 	return types.StringType.TerraformType(ctx)
 }
 
-func (t *IPAddressType) ValueFromTerraform(ctx context.Context, val tftypes.Value) (attr.Value, error) {
+func (t *ipAddressType) ValueFromTerraform(ctx context.Context, val tftypes.Value) (attr.Value, error) {
 	if !val.IsKnown() {
 		return ipAddress{attrType: t, Unknown: true}, nil
 	}
@@ -49,10 +74,10 @@ func (t *IPAddressType) ValueFromTerraform(ctx context.Context, val tftypes.Valu
 		return nil, err
 	}
 
-	return ipAddress{attrType: t, Value: net.ParseIP(s)}, nil
+	return t.IPFromString(s)
 }
 
-func (t *IPAddressType) Validate(ctx context.Context, val tftypes.Value, path path.Path) diag.Diagnostics {
+func (t *ipAddressType) Validate(ctx context.Context, val tftypes.Value, path path.Path) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if !val.Type().Equal(tftypes.String) {
@@ -78,21 +103,48 @@ func (t *IPAddressType) Validate(ctx context.Context, val tftypes.Value, path pa
 		return diags
 	}
 
-	ip := net.ParseIP(s)
-	if ip == nil {
+	_, err = t.IPFromString(s)
+	if err != nil {
 		diags.AddAttributeError(
 			path,
 			"IP Address Type Validation Error",
-			fmt.Sprintf("Value is not a valid IP address: %s", s),
+			err.Error(),
 		)
-		return diags
 	}
-
 	return diags
 }
 
+func (t *ipAddressType) IPFromString(s string) (ipAddress, error) {
+	ip := net.ParseIP(s)
+	if ip == nil {
+		return ipAddress{}, fmt.Errorf("value is not a valid IP address: %s", s)
+	}
+
+	switch len(ip) {
+	case net.IPv4len:
+		if t.AllowIPv4 {
+			break
+		}
+		return ipAddress{}, fmt.Errorf("value is an IPv4 address, which is not allowed: %s", s)
+	case net.IPv6len:
+		if t.AllowIPv6 {
+			break
+		}
+		return ipAddress{}, fmt.Errorf("value is an IPv6 address, which is not allowed: %s", s)
+	default:
+		return ipAddress{}, fmt.Errorf("value is not a known type of IP address: %s", s)
+	}
+
+	return ipAddress{
+		attrType: t,
+		Unknown:  false,
+		Null:     false,
+		Value:    ip,
+	}, nil
+}
+
 type ipAddress struct {
-	attrType *IPAddressType
+	attrType *ipAddressType
 	Unknown  bool
 	Null     bool
 	Value    net.IP
