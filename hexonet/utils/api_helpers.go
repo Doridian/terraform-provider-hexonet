@@ -53,6 +53,7 @@ func FillRequestArray(list types.List, oldList types.List, prefix string, req ma
 		HandleUnexpectedUnknown(diag)
 		return
 	}
+
 	listIdx := 0
 
 	if !list.Null {
