@@ -83,6 +83,20 @@ func makeContactSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Type:     types.BoolType,
 			Required: true,
 		},
+		"vat_id": {
+			Type:     types.StringType,
+			Optional: true,
+		},
+		"id_authority": {
+			Type:      types.StringType,
+			Optional:  true,
+			Sensitive: true,
+		},
+		"id_number": {
+			Type:      types.StringType,
+			Optional:  true,
+			Sensitive: true,
+		},
 		"extra_attributes": {
 			Type: types.MapType{
 				ElemType: types.StringType,
@@ -122,6 +136,10 @@ type Contact struct {
 
 	Disclose types.Bool `tfsdk:"disclose"`
 
+	VatID       types.String `tfsdk:"vat_id"`
+	IDAuthority types.String `tfsdk:"id_authority"`
+	IDNumber    types.String `tfsdk:"id_number"`
+
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
 }
 
@@ -147,7 +165,7 @@ func makeContactCommand(cl *apiclient.APIClient, cmd utils.CommandType, contact 
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
-		optionals := []string{"TITLE", "MIDDLENAME", "ORGANIZATION", "STATE", "FAX"}
+		optionals := []string{"TITLE", "MIDDLENAME", "ORGANIZATION", "STATE", "FAX", "VATID", "IDAUTHORITY", "IDNUMBER"}
 
 		req["TITLE"] = utils.AutoUnboxString(contact.Title, "")
 		req["FIRSTNAME"] = utils.AutoUnboxString(contact.FirstName, "")
@@ -167,9 +185,16 @@ func makeContactCommand(cl *apiclient.APIClient, cmd utils.CommandType, contact 
 		req["FAX"] = utils.AutoUnboxString(contact.Fax, "")
 		req["EMAIL"] = utils.AutoUnboxString(contact.Email, "")
 
-		if !contact.Disclose.Null && !contact.Disclose.Unknown {
-			req["DISCLOSE"] = utils.BoolToNumberStr(contact.Disclose.Value)
+		if contact.Disclose.Unknown {
+			utils.HandleUnexpectedUnknown(diag)
+			return nil
 		}
+
+		req["DISCLOSE"] = utils.BoolToNumberStr(contact.Disclose.Value)
+
+		req["VATID"] = utils.AutoUnboxString(contact.VatID, "")
+		req["IDAUTHORITY"] = utils.AutoUnboxString(contact.IDAuthority, "")
+		req["IDNUMBER"] = utils.AutoUnboxString(contact.IDNumber, "")
 
 		if cmd == utils.CommandUpdate {
 			i := 0
@@ -218,6 +243,10 @@ func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClie
 		Email: utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "EMAIL", nil)),
 
 		Disclose: utils.AutoBoxBoolNumberStr(utils.ColumnFirstOrDefault(resp, "DISCLOSE", "0")),
+
+		VatID:       utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "VATID", nil)),
+		IDAuthority: utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "IDAUTHORITY", nil)),
+		IDNumber:    utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "IDNUMBER", nil)),
 
 		ExtraAttributes: utils.HandleExtraAttributesRead(resp),
 	}
