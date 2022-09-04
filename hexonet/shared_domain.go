@@ -136,7 +136,7 @@ func kindDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}, 
 	}
 
 	// Load basic information
-	id := columnFirstOrDefault(resp, "ID", nil).(string)
+	id := columnFirstOrDefault(resp, "ID", "").(string)
 	d.SetId(id)
 	d.Set("domain", id)
 

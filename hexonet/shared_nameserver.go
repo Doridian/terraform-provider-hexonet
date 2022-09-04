@@ -80,7 +80,7 @@ func kindNameserverRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diags
 	}
 
-	id := columnFirstOrDefault(resp, "HOST", nil).(string)
+	id := columnFirstOrDefault(resp, "HOST", "").(string)
 	d.SetId(id)
 	d.Set("name_server", id)
 
