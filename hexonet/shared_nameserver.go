@@ -3,32 +3,30 @@ package hexonet
 import (
 	"context"
 	"fmt"
-	"net"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
 const MAX_IPADDRESS = 12
 
-func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
-	res := map[string]*schema.Schema{
+func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
+	res := map[string]tfsdk.Attribute{
 		"name_server": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
-			ForceNew: true,
 		},
 		"ip_addresses": {
-			Type:     schema.TypeList,
+			Type: types.ListType{
+				ElemType: types.StringType,
+			},
 			Required: true,
-			MinItems: 1,
-			MaxItems: MAX_IPADDRESS,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+			/*Elem: &tfsdk.Schema{
+				Type: tfsdk.TypeString,
+				DiffSuppressFunc: func(k, old, new string, d *tfsdk.ResourceData) bool {
 					oldIp := net.ParseIP(old)
 					newIp := net.ParseIP(new)
 					if oldIp == nil || newIp == nil {
@@ -36,8 +34,8 @@ func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
 					}
 					return newIp.Equal(oldIp)
 				},
-				ValidateFunc: validation.IsIPAddress,
-			},
+				ValidateFunc: tfsdk.IsIPAddress,
+			},*/
 		},
 	}
 
@@ -48,46 +46,40 @@ func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
 	return res
 }
 
-func makeNameserverCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.ResourceData) *response.Response {
-	nameserver := d.Get("name_server").(string)
-	if nameserver == "" {
-		nameserver = d.Id()
-	} else {
-		d.SetId(nameserver)
+type NameServer struct {
+	NameServer  types.String `tfsdk:"name_server"`
+	IpAddresses types.List   `tfsdk:"ip_addresses"`
+}
+
+func makeNameServerCommand(cl *apiclient.APIClient, cmd CommandType, ns NameServer, oldNs NameServer, diag diag.Diagnostics) *response.Response {
+	if ns.NameServer.Null || ns.NameServer.Unknown {
+		diag.AddError("Main ID attribute unknwon or null", "name_server is null or unknown")
+		return nil
 	}
 
 	req := map[string]interface{}{
 		"COMMAND":    fmt.Sprintf("%sNameserver", cmd),
-		"NAMESERVER": nameserver,
+		"NAMESERVER": ns.NameServer.Value,
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(d, "ip_addresses", "IPADDRESS", req, MAX_IPADDRESS)
+		fillRequestArray(ns.IpAddresses, oldNs.IpAddresses, "IPADDRESS", req)
 	}
 
-	return cl.Request(req)
+	resp := cl.Request(req)
+	handlePossibleErrorResponse(resp, diag)
+	return resp
 }
 
-func kindNameserverRead(ctx context.Context, d *schema.ResourceData, m interface{}, addAll bool) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeNameserverCommand(cl, CommandRead, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, addAll bool, diag diag.Diagnostics) NameServer {
+	resp := makeNameServerCommand(cl, CommandRead, ns, ns, diag)
+	if diag.HasError() {
+		return ns
 	}
 
-	id := columnFirstOrDefault(resp, "HOST", "").(string)
-	d.SetId(id)
-	if id == "" {
-		return diags
+	return NameServer{
+		NameServer: types.String{Value: columnFirstOrDefault(resp, "HOST", "").(string)},
+
+		IpAddresses: stringListToAttrList(resp.GetColumn("IPADDRESS").GetData()),
 	}
-	d.Set("name_server", id)
-
-	d.Set("ip_addresses", resp.GetColumn("IPADDRESS").GetData())
-
-	return diags
 }

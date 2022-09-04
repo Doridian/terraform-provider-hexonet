@@ -3,17 +3,46 @@ package hexonet
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-func dataSourceDomain() *schema.Resource {
-	return &schema.Resource{
-		ReadContext: dataSourceDomainRead,
-		Schema:      makeDomainSchema(true),
-	}
+type dataSourceDomainType struct{}
+
+type dataSourceDomain struct {
+	p localProvider
 }
 
-func dataSourceDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return kindDomainRead(ctx, d, m, true)
+func (d dataSourceDomainType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: makeNameServerSchema(true),
+	}, nil
+}
+
+func (d dataSourceDomainType) NewDataSource(_ context.Context, p provider.Provider) (datasource.DataSource, diag.Diagnostics) {
+	return dataSourceDomain{
+		p: *(p.(*localProvider)),
+	}, nil
+}
+
+func (d dataSourceDomain) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	if !d.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
+	}
+
+	var data Domain
+	diags := req.Config.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindDomainRead(ctx, data, d.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
 }

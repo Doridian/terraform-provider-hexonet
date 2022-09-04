@@ -3,69 +3,126 @@ package hexonet
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hexonet/go-sdk/v3/apiclient"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-func resourceNameserver() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: resourceNameserverCreate,
-		ReadContext:   resourceNameserverRead,
-		UpdateContext: resourceNameserverUpdate,
-		DeleteContext: resourceNameserverDelete,
-		Schema:        makeNameserverSchema(false),
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-	}
+type resourceNameServerType struct{}
+
+type resourceNameServer struct {
+	p localProvider
 }
 
-func resourceNameserverCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeNameserverCommand(cl, CommandCreate, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
-	}
-
-	return diags
+func (r resourceNameServerType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: makeNameServerSchema(false),
+	}, nil
 }
 
-func resourceNameserverRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return kindNameserverRead(ctx, d, m, false)
+func (r resourceNameServerType) NewResource(_ context.Context, p provider.Provider) (resource.Resource, diag.Diagnostics) {
+	return resourceNameServer{
+		p: *(p.(*localProvider)),
+	}, nil
 }
 
-func resourceNameserverUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeNameserverCommand(cl, CommandUpdate, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func (r resourceNameServer) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
 	}
 
-	return resourceDomainRead(ctx, d, m)
+	var data NameServer
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeNameServerCommand(r.p.client, CommandCreate, data, NameServer{}, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
 }
 
-func resourceNameserverDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeNameserverCommand(cl, CommandDelete, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func (r resourceNameServer) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
 	}
 
-	return diags
+	var data NameServer
+	diags := req.State.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
+}
+
+func (r resourceNameServer) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
+	}
+
+	var data NameServer
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var dataOld NameServer
+	diags = req.State.Get(ctx, &dataOld)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeNameServerCommand(r.p.client, CommandUpdate, data, dataOld, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
+}
+
+func (r resourceNameServer) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
+	}
+
+	var dataOld NameServer
+	diags := req.State.Get(ctx, &dataOld)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeNameServerCommand(r.p.client, CommandDelete, NameServer{
+		NameServer: dataOld.NameServer,
+	}, dataOld, resp.Diagnostics)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.RemoveResource(ctx)
 }

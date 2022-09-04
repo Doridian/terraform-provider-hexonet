@@ -4,85 +4,84 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
-func makeContactSchema(readOnly bool) map[string]*schema.Schema {
-	res := map[string]*schema.Schema{
+func makeContactSchema(readOnly bool) map[string]tfsdk.Attribute {
+	res := map[string]tfsdk.Attribute{
 		"id": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Computed: true,
 		},
 		"title": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Optional: true,
 		},
 		"first_name": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"middle_name": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Optional: true,
 		},
 		"last_name": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"organization": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Optional: true,
 		},
 		"address_line_1": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"address_line_2": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Optional: true,
 		},
 		"city": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"state": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Optional: true,
 		},
 		"zip": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"country": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"phone": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"fax": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Optional: true,
 		},
 		"email": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
 		},
 		"disclose": {
-			Type:     schema.TypeBool,
+			Type:     types.BoolType,
 			Optional: true,
-			Default:  false,
 		},
 		"extra_attributes": {
-			Type:     schema.TypeMap,
-			Optional: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.MapType{
+				ElemType: types.StringType,
 			},
+			Optional: true,
 		},
 	}
 
@@ -93,7 +92,34 @@ func makeContactSchema(readOnly bool) map[string]*schema.Schema {
 	return res
 }
 
-func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.ResourceData) *response.Response {
+type Contact struct {
+	ID types.String `tfsdk:"id"`
+
+	Title      types.String `tfsdk:"title"`
+	FirstName  types.String `tfsdk:"first_name"`
+	MiddleName types.String `tfsdk:"middle_name"`
+	LastName   types.String `tfsdk:"last_name"`
+
+	Organization types.String `tfsdk:"organization"`
+
+	AddressLine1 types.String `tfsdk:"address_line_1"`
+	AddressLine2 types.String `tfsdk:"address_line_2"`
+
+	City   types.String `tfsdk:"city"`
+	State  types.String `tfsdk:"state"`
+	ZIP    types.String `tfsdk:"zip"`
+	Coutry types.String `tfsdk:"country"`
+
+	Phone types.String `tfsdk:"phone"`
+	Fax   types.String `tfsdk:"fax"`
+	Email types.String `tfsdk:"email"`
+
+	Disclose types.Bool `tfsdk:"disclose"`
+
+	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
+}
+
+func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, contact Contact, oldContact Contact, diag diag.Diagnostics) *response.Response {
 	req := map[string]interface{}{
 		"COMMAND": fmt.Sprintf("%sContact", cmd),
 	}
@@ -101,37 +127,37 @@ func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.Reso
 	if cmd == CommandCreate {
 		req["NEW"] = "1"
 	} else {
-		id := d.Get("id").(string)
-		if id == "" {
-			id = d.Id()
-		} else {
-			d.SetId(id)
+		if contact.ID.Null || contact.ID.Unknown {
+			diag.AddError("Main ID attribute unknwon or null", "id is null or unknown")
+			return nil
 		}
-		req["CONTACT"] = id
+		req["CONTACT"] = contact.ID.Value
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
 		optionals := []string{"TITLE", "MIDDLENAME", "ORGANIZATION", "STATE", "FAX"}
 
-		req["TITLE"] = d.Get("title").(string)
-		req["FIRSTNAME"] = d.Get("first_name").(string)
-		req["MIDDLENAME"] = d.Get("middle_name").(string)
-		req["LASTNAME"] = d.Get("last_name").(string)
+		req["TITLE"] = autoUnboxString(contact.Title, "")
+		req["FIRSTNAME"] = autoUnboxString(contact.FirstName, "")
+		req["MIDDLENAME"] = autoUnboxString(contact.MiddleName, "")
+		req["LASTNAME"] = autoUnboxString(contact.LastName, "")
 
-		req["ORGANIZATION"] = d.Get("organization").(string)
+		req["ORGANIZATION"] = autoUnboxString(contact.Organization, "")
 
-		req["STREET0"] = d.Get("address_line_1").(string)
-		req["STREET1"] = d.Get("address_line_2").(string)
-		req["CITY"] = d.Get("city").(string)
-		req["STATE"] = d.Get("state").(string)
-		req["ZIP"] = d.Get("zip").(string)
-		req["COUNTRY"] = d.Get("country").(string)
+		req["STREET0"] = autoUnboxString(contact.AddressLine1, "")
+		req["STREET1"] = autoUnboxString(contact.AddressLine2, "")
+		req["CITY"] = autoUnboxString(contact.City, "")
+		req["STATE"] = autoUnboxString(contact.State, "")
+		req["ZIP"] = autoUnboxString(contact.ZIP, "")
+		req["COUNTRY"] = autoUnboxString(contact.Coutry, "")
 
-		req["PHONE"] = d.Get("phone").(string)
-		req["FAX"] = d.Get("fax").(string)
-		req["EMAIL"] = d.Get("email").(string)
+		req["PHONE"] = autoUnboxString(contact.Phone, "")
+		req["FAX"] = autoUnboxString(contact.Fax, "")
+		req["EMAIL"] = autoUnboxString(contact.Email, "")
 
-		req["DISCLOSE"] = boolToNumberStr(d.Get("disclose").(bool))
+		if !contact.Disclose.Null && !contact.Disclose.Unknown {
+			req["DISCLOSE"] = boolToNumberStr(contact.Disclose.Value)
+		}
 
 		if cmd == CommandUpdate {
 			i := 0
@@ -146,52 +172,40 @@ func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.Reso
 			}
 		}
 
-		handleExtraAttributesWrite(d, req)
+		handleExtraAttributesWrite(contact.ExtraAttributes, oldContact.ExtraAttributes, req)
 	}
 
 	return cl.Request(req)
 }
 
-func kindContactRead(ctx context.Context, d *schema.ResourceData, m interface{}, addAll bool) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeContactCommand(cl, CommandRead, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClient, addAll bool, diag diag.Diagnostics) Contact {
+	resp := makeContactCommand(cl, CommandRead, contact, contact, diag)
+	if diag.HasError() {
+		return Contact{}
 	}
 
-	id := columnFirstOrDefault(resp, "ID", "").(string)
-	d.SetId(id)
-	if id == "" {
-		return diags
+	return Contact{
+		ID: types.String{Value: columnFirstOrDefault(resp, "ID", "").(string)},
+
+		Title:      autoBoxString(columnFirstOrDefault(resp, "TITLE", nil)),
+		FirstName:  autoBoxString(columnFirstOrDefault(resp, "FIRSTNAME", nil)),
+		MiddleName: autoBoxString(columnFirstOrDefault(resp, "MIDDLENAME", nil)),
+		LastName:   autoBoxString(columnFirstOrDefault(resp, "LASTNAME", nil)),
+
+		Organization: autoBoxString(columnFirstOrDefault(resp, "ORGANIZATION", nil)),
+
+		AddressLine1: autoBoxString(columnIndexOrDefault(resp, "STREET", nil, 0)),
+		AddressLine2: autoBoxString(columnIndexOrDefault(resp, "STREET", nil, 1)),
+		City:         autoBoxString(columnFirstOrDefault(resp, "CITY", nil)),
+		ZIP:          autoBoxString(columnFirstOrDefault(resp, "ZIP", nil)),
+		Coutry:       autoBoxString(columnFirstOrDefault(resp, "COUNTRY", nil)),
+
+		Phone: autoBoxString(columnFirstOrDefault(resp, "PHONE", nil)),
+		Fax:   autoBoxString(columnFirstOrDefault(resp, "FAX", nil)),
+		Email: autoBoxString(columnFirstOrDefault(resp, "EMAIL", nil)),
+
+		Disclose: autoBoxBoolNumberStr(columnFirstOrDefault(resp, "DISCLOSE", nil)),
+
+		ExtraAttributes: handleExtraAttributesRead(contact.ExtraAttributes, resp, addAll),
 	}
-
-	d.Set("title", columnFirstOrDefault(resp, "TITLE", nil))
-	d.Set("first_name", columnFirstOrDefault(resp, "FIRSTNAME", nil))
-	d.Set("middle_name", columnFirstOrDefault(resp, "MIDDLENAME", nil))
-	d.Set("last_name", columnFirstOrDefault(resp, "LASTNAME", nil))
-
-	d.Set("organization", columnFirstOrDefault(resp, "ORGANIZATION", nil))
-
-	d.Set("address_line_1", columnIndexOrDefault(resp, "STREET", nil, 0))
-	d.Set("address_line_2", columnIndexOrDefault(resp, "STREET", nil, 1))
-
-	d.Set("city", columnFirstOrDefault(resp, "CITY", nil))
-	d.Set("state", columnFirstOrDefault(resp, "STATE", nil))
-	d.Set("zip", columnFirstOrDefault(resp, "ZIP", nil))
-	d.Set("country", columnFirstOrDefault(resp, "COUNTRY", nil))
-
-	d.Set("phone", columnFirstOrDefault(resp, "PHONE", nil))
-	d.Set("fax", columnFirstOrDefault(resp, "FAX", nil))
-	d.Set("email", columnFirstOrDefault(resp, "EMAIL", nil))
-
-	d.Set("disclose", numberStrToBool(columnFirstOrDefault(resp, "DISCLOSE", "0").(string)))
-
-	handleExtraAttributesRead(d, resp, addAll)
-
-	return diags
 }

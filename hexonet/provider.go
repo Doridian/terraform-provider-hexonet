@@ -2,72 +2,129 @@ package hexonet
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
-func Provider() *schema.Provider {
-	return &schema.Provider{
-		Schema: map[string]*schema.Schema{
-			"high_performance": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_HIGH_PERFORMANCE", false),
-			},
-			"username": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_USERNAME", nil),
-			},
-			"role": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_ROLE", nil),
-			},
-			"password": {
-				Type:        schema.TypeString,
-				Sensitive:   true,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_PASSWORD", nil),
-			},
-			"mfa_token": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Sensitive:   true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_MFA_TOKEN", nil),
-			},
-			"live": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HEXONET_LIVE", false),
-			},
-		},
-		ResourcesMap: map[string]*schema.Resource{
-			"hexonet_domain":     resourceDomain(),
-			"hexonet_nameserver": resourceNameserver(),
-			"hexonet_contact":    resourceContact(),
-		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"hexonet_domain":     dataSourceDomain(),
-			"hexonet_nameserver": dataSourceNameserver(),
-			"hexonet_contact":    dataSourceContact(),
-		},
-		ConfigureContextFunc: providerConfigure,
-	}
+func New() provider.Provider {
+	return &localProvider{}
 }
 
-func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-	role := d.Get("role").(string)
-	mfatoken := d.Get("mfa_token").(string)
-	highperformance := d.Get("high_performance").(bool)
-	live := d.Get("live").(bool)
+type localProvider struct {
+	configured bool
+	client     *apiclient.APIClient
+}
 
-	var diags diag.Diagnostics
+func (p *localProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: map[string]tfsdk.Attribute{
+			"username": {
+				Type:     types.StringType,
+				Optional: true,
+			},
+			"role": {
+				Type:     types.StringType,
+				Optional: true,
+			},
+			"password": {
+				Type:      types.StringType,
+				Sensitive: true,
+				Optional:  true,
+			},
+			"mfa_token": {
+				Type:      types.StringType,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"live": {
+				Type:     types.BoolType,
+				Optional: true,
+			},
+			"high_performance": {
+				Type:     types.BoolType,
+				Optional: true,
+			},
+		},
+	}, nil
+}
+
+type localProviderData struct {
+	Username        types.String `tfsdk:"username"`
+	Role            types.String `tfsdk:"role"`
+	Password        types.String `tfsdk:"password"`
+	MfaToken        types.String `tfsdk:"mfa_token"`
+	Live            types.Bool   `tfsdk:"live"`
+	HighPerformance types.Bool   `tfsdk:"high_performance"`
+}
+
+func (p *localProvider) GetResources(_ context.Context) (map[string]provider.ResourceType, diag.Diagnostics) {
+	return map[string]provider.ResourceType{
+		"hexonet_domain":     resourceDomainType{},
+		"hexonet_nameserver": resourceNameServerType{},
+		"hexonet_contact":    resourceContactType{},
+	}, nil
+}
+
+func (p *localProvider) GetDataSources(_ context.Context) (map[string]provider.DataSourceType, diag.Diagnostics) {
+	return map[string]provider.DataSourceType{
+		"hexonet_domain":     dataSourceDomainType{},
+		"hexonet_nameserver": dataSourceNameServerType{},
+		"hexonet_contact":    dataSourceContactType{},
+	}, nil
+}
+
+func getValueOrDefaultToEnv(val types.String, env string, resp *provider.ConfigureResponse, allowEmpty bool) string {
+	if val.Unknown {
+		resp.Diagnostics.AddError("Can not configure client", fmt.Sprintf("Unknown value for %s", env))
+		return ""
+	}
+
+	var res string
+	if val.Null {
+		res = os.Getenv(fmt.Sprintf("HEXONET_%s", strings.ToUpper(env)))
+	} else {
+		res = val.Value
+	}
+
+	if res == "" && !allowEmpty {
+		resp.Diagnostics.AddError("Can not configure client", fmt.Sprintf("Empty value for %s", env))
+	}
+	return res
+}
+
+func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var config localProviderData
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	//config.HighPerformance.
+
+	username := getValueOrDefaultToEnv(config.Username, "username", resp, false)
+	password := getValueOrDefaultToEnv(config.Password, "password", resp, false)
+	role := getValueOrDefaultToEnv(config.Role, "role", resp, true)
+	mfaToken := getValueOrDefaultToEnv(config.MfaToken, "mfa_token", resp, true)
+
+	highPerformance := false
+	live := true
+
+	if !config.HighPerformance.Null && !config.HighPerformance.Unknown {
+		highPerformance = config.Live.Value
+	}
+
+	if !config.Live.Null && !config.Live.Unknown {
+		live = config.Live.Value
+	}
 
 	c := apiclient.NewAPIClient()
 	if live {
@@ -76,7 +133,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		c.UseOTESystem()
 	}
 
-	if highperformance {
+	if highPerformance {
 		c.UseHighPerformanceConnectionSetup()
 	} else {
 		c.UseDefaultConnectionSetup()
@@ -89,20 +146,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	}
 
 	var res *response.Response
-	if mfatoken != "" {
+	if mfaToken != "" {
 		res = c.Login()
 	} else {
-		res = c.Login(mfatoken)
+		res = c.Login(mfaToken)
 	}
 
-	if res.IsError() {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to log into Hexonet API",
-			Detail:   res.Raw,
-		})
-		return nil, diags
-	}
-
-	return c, diags
+	handlePossibleErrorResponse(res, resp.Diagnostics)
 }

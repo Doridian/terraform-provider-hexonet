@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
 )
@@ -15,75 +17,60 @@ const MAX_WHOIS_BANNER = 3
 
 const MAX_CONTACTS = 3
 
-func makeDomainSchema(readOnly bool) map[string]*schema.Schema {
-	res := map[string]*schema.Schema{
+func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
+	res := map[string]tfsdk.Attribute{
 		"domain": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Required: true,
-			ForceNew: true,
 		},
 		"name_servers": {
-			Type:     schema.TypeList,
-			Required: true,
-			MinItems: 1,
-			MaxItems: MAX_NAMESERVERS,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.ListType{
+				ElemType: types.StringType,
 			},
 		},
 		"transfer_lock": {
-			Type:     schema.TypeBool,
+			Type:     types.BoolType,
 			Optional: true,
 		},
 		"auth_code": {
-			Type:     schema.TypeString,
+			Type:     types.StringType,
 			Computed: true,
 		},
 		"status": {
-			Type:     schema.TypeList,
-			Computed: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.ListType{
+				ElemType: types.StringType,
 			},
+			Computed: true,
 		},
 		"extra_attributes": {
-			Type:     schema.TypeMap,
-			Optional: true,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.MapType{
+				ElemType: types.StringType,
 			},
+			Optional: true,
 		},
 		"owner_contacts": {
-			Type:     schema.TypeList,
-			Optional: true,
-			MaxItems: 1,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.ListType{
+				ElemType: types.StringType,
 			},
+			Optional: true,
 		},
 		"admin_contacts": {
-			Type:     schema.TypeList,
-			Optional: true,
-			MaxItems: MAX_CONTACTS,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.ListType{
+				ElemType: types.StringType,
 			},
+			Optional: true,
 		},
 		"tech_contacts": {
-			Type:     schema.TypeList,
-			Optional: true,
-			MaxItems: MAX_CONTACTS,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.ListType{
+				ElemType: types.StringType,
 			},
+			Optional: true,
 		},
 		"billing_contacts": {
-			Type:     schema.TypeList,
-			Optional: true,
-			MaxItems: MAX_CONTACTS,
-			Elem: &schema.Schema{
-				Type: schema.TypeString,
+			Type: types.ListType{
+				ElemType: types.StringType,
 			},
+			Optional: true,
 		},
 	}
 
@@ -94,87 +81,86 @@ func makeDomainSchema(readOnly bool) map[string]*schema.Schema {
 	return res
 }
 
-func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, d *schema.ResourceData) *response.Response {
-	domain := d.Get("domain").(string)
-	if domain == "" {
-		domain = d.Id()
-	} else {
-		d.SetId(domain)
+type Domain struct {
+	Domain types.String `tfsdk:"domain"`
+
+	NameServers types.List `tfsdk:"name_servers"`
+
+	OwnerContacts   types.List `tfsdk:"owner_contacts"`
+	AdminContacts   types.List `tfsdk:"admin_contacts"`
+	TechContacts    types.List `tfsdk:"tech_contacts"`
+	BillingContacts types.List `tfsdk:"billing_contacts"`
+
+	TransferLock types.Bool   `tfsdk:"transfer_lock"`
+	Status       types.List   `tfsdk:"status"`
+	AuthCode     types.String `tfsdk:"auth_code"`
+
+	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
+}
+
+func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, domain Domain, oldDomain Domain, diag diag.Diagnostics) *response.Response {
+	if domain.Domain.Null || domain.Domain.Unknown {
+		diag.AddError("Main ID attribute unknwon or null", "domain is null or unknown")
+		return nil
 	}
 
 	req := map[string]interface{}{
 		"COMMAND": fmt.Sprintf("%sDomain", cmd),
-		"DOMAIN":  domain,
+		"DOMAIN":  domain.Domain.Value,
 	}
 
 	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(d, "name_servers", "NAMESERVER", req, MAX_NAMESERVERS)
+		fillRequestArray(domain.NameServers, oldDomain.NameServers, "NAMESERVER", req)
 
-		fillRequestArray(d, "owner_contacts", "OWNERCONTACT", req, 1)
-		fillRequestArray(d, "admin_contacts", "ADMINCONTACT", req, MAX_CONTACTS)
-		fillRequestArray(d, "tech_contacts", "TECHCONTACT", req, MAX_CONTACTS)
-		fillRequestArray(d, "billing_contacts", "BILLINGCONTACT", req, MAX_CONTACTS)
+		fillRequestArray(domain.OwnerContacts, oldDomain.OwnerContacts, "OWNERCONTACT", req)
+		fillRequestArray(domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req)
+		fillRequestArray(domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req)
+		fillRequestArray(domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req)
 
-		req["TRANSFERLOCK"] = boolToNumberStr(d.Get("transfer_lock").(bool))
+		if !domain.TransferLock.Null && !domain.TransferLock.Unknown {
+			req["TRANSFERLOCK"] = boolToNumberStr(domain.TransferLock.Value)
+		}
 
-		handleExtraAttributesWrite(d, req)
+		handleExtraAttributesWrite(domain.ExtraAttributes, oldDomain.ExtraAttributes, req)
 	}
 
-	return cl.Request(req)
+	resp := cl.Request(req)
+	handlePossibleErrorResponse(resp, diag)
+	return resp
 }
 
-func kindDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}, addAll bool) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeDomainCommand(cl, CommandRead, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func stringListIfExists(oldVal types.List, resp *response.Response, prop string) types.List {
+	if oldVal.Null {
+		return types.List{
+			Null:     true,
+			ElemType: types.StringType,
+			Elems:    []attr.Value{},
+		}
 	}
 
-	// Load basic information
-	id := columnFirstOrDefault(resp, "ID", "").(string)
-	d.SetId(id)
-	if id == "" {
-		return diags
-	}
-	d.Set("domain", id)
+	return stringListToAttrList(columnOrDefault(resp, prop, []string{}))
+}
 
-	_, ok := d.GetOkExists("name_servers")
-	if ok || addAll {
-		d.Set("name_servers", columnOrDefault(resp, "NAMESERVER", []string{}))
+func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient, addAll bool, diag diag.Diagnostics) Domain {
+	resp := makeDomainCommand(cl, CommandRead, domain, domain, diag)
+	if diag.HasError() {
+		return Domain{}
 	}
 
-	d.Set("transfer_lock", numberStrToBool(columnFirstOrDefault(resp, "TRANSFERLOCK", "0").(string)))
-	d.Set("status", columnOrDefault(resp, "STATUS", []string{}))
+	return Domain{
+		Domain: types.String{Value: columnFirstOrDefault(resp, "ID", "").(string)},
 
-	authCode := columnFirstOrDefault(resp, "AUTH", nil)
-	if authCode != nil {
-		d.Set("auth_code", authCode.(string))
-	}
+		NameServers: stringListToAttrList(columnOrDefault(resp, "NAMESERVER", []string{})),
 
-	handleExtraAttributesRead(d, resp, addAll)
+		TransferLock: types.Bool{Value: numberStrToBool(columnFirstOrDefault(resp, "TRANSFERLOCK", "0").(string))},
+		Status:       stringListToAttrList(columnOrDefault(resp, "STATUS", []string{})),
+		AuthCode:     types.String{Value: columnFirstOrDefault(resp, "AUTH", "").(string)},
 
-	// Read contacts
-	_, ok = d.GetOkExists("owner_contacts")
-	if ok || addAll {
-		d.Set("owner_contacts", columnOrDefault(resp, "OWNERCONTACT", []string{}))
-	}
-	_, ok = d.GetOkExists("admin_contacts")
-	if ok || addAll {
-		d.Set("admin_contacts", columnOrDefault(resp, "ADMINCONTACT", []string{}))
-	}
-	_, ok = d.GetOkExists("tech_contacts")
-	if ok || addAll {
-		d.Set("tech_contacts", columnOrDefault(resp, "TECHCONTACT", []string{}))
-	}
-	_, ok = d.GetOkExists("billing_contacts")
-	if ok || addAll {
-		d.Set("billing_contacts", columnOrDefault(resp, "BILLINGCONTACT", []string{}))
-	}
+		OwnerContacts:   stringListIfExists(domain.OwnerContacts, resp, "OWNERCONTACT"),
+		AdminContacts:   stringListIfExists(domain.OwnerContacts, resp, "ADMINCONTACT"),
+		TechContacts:    stringListIfExists(domain.OwnerContacts, resp, "TECHCONTACT"),
+		BillingContacts: stringListIfExists(domain.OwnerContacts, resp, "BILLINGCONTACT"),
 
-	return diags
+		ExtraAttributes: handleExtraAttributesRead(domain.ExtraAttributes, resp, addAll),
+	}
 }

@@ -3,69 +3,126 @@ package hexonet
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hexonet/go-sdk/v3/apiclient"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-func resourceDomain() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: resourceDomainCreate,
-		ReadContext:   resourceDomainRead,
-		UpdateContext: resourceDomainUpdate,
-		DeleteContext: resourceDomainDelete,
-		Schema:        makeDomainSchema(false),
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-	}
+type resourceDomainType struct{}
+
+type resourceDomain struct {
+	p localProvider
 }
 
-func resourceDomainCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeDomainCommand(cl, CommandCreate, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
-	}
-
-	return diags
+func (r resourceDomainType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: makeDomainSchema(false),
+	}, nil
 }
 
-func resourceDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return kindDomainRead(ctx, d, m, false)
+func (r resourceDomainType) NewResource(_ context.Context, p provider.Provider) (resource.Resource, diag.Diagnostics) {
+	return resourceDomain{
+		p: *(p.(*localProvider)),
+	}, nil
 }
 
-func resourceDomainUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeDomainCommand(cl, CommandUpdate, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
 	}
 
-	return resourceDomainRead(ctx, d, m)
+	var data NameServer
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeNameServerCommand(r.p.client, CommandCreate, data, NameServer{}, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindNameserverRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
 }
 
-func resourceDomainDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeDomainCommand(cl, CommandDelete, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func (r resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
 	}
 
-	return diags
+	var data Domain
+	diags := req.State.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindDomainRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
+}
+
+func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
+	}
+
+	var data Domain
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var dataOld Domain
+	diags = req.State.Get(ctx, &dataOld)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeDomainCommand(r.p.client, CommandUpdate, data, dataOld, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindDomainRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
+}
+
+func (r resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
+	}
+
+	var dataOld Domain
+	diags := req.State.Get(ctx, &dataOld)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeDomainCommand(r.p.client, CommandDelete, Domain{
+		Domain: dataOld.Domain,
+	}, dataOld, resp.Diagnostics)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.RemoveResource(ctx)
 }

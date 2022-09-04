@@ -3,72 +3,126 @@ package hexonet
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hexonet/go-sdk/v3/apiclient"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-func resourceContact() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: resourceContactCreate,
-		ReadContext:   resourceContactRead,
-		UpdateContext: resourceContactUpdate,
-		DeleteContext: resourceContactDelete,
-		Schema:        makeContactSchema(false),
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-	}
+type resourceContactType struct{}
+
+type resourceContact struct {
+	p localProvider
 }
 
-func resourceContactCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeContactCommand(cl, CommandCreate, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
-	}
-
-	id := columnFirstOrDefault(resp, "CONTACT", nil).(string)
-	d.SetId(id)
-
-	return diags
+func (r resourceContactType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: makeContactSchema(false),
+	}, nil
 }
 
-func resourceContactRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return kindContactRead(ctx, d, m, false)
+func (r resourceContactType) NewResource(_ context.Context, p provider.Provider) (resource.Resource, diag.Diagnostics) {
+	return resourceContact{
+		p: *(p.(*localProvider)),
+	}, nil
 }
 
-func resourceContactUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeContactCommand(cl, CommandUpdate, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func (r resourceContact) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
 	}
 
-	return resourceContactRead(ctx, d, m)
+	var data Contact
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeContactCommand(r.p.client, CommandCreate, data, Contact{}, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindContactRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
 }
 
-func resourceContactDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cl := m.(*apiclient.APIClient)
-
-	var diags diag.Diagnostics
-
-	resp := makeContactCommand(cl, CommandDelete, d)
-	respDiag := handlePossibleErrorResponse(resp)
-	if respDiag != nil {
-		diags = append(diags, *respDiag)
-		return diags
+func (r resourceContact) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
 	}
 
-	return diags
+	var data Contact
+	diags := req.State.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindContactRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
+}
+
+func (r resourceContact) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
+	}
+
+	var data Contact
+	diags := req.Plan.Get(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var dataOld Contact
+	diags = req.State.Get(ctx, &dataOld)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeContactCommand(r.p.client, CommandUpdate, data, dataOld, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data = kindContactRead(ctx, data, r.p.client, false, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.Set(ctx, data)
+}
+
+func (r resourceContact) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	if !r.p.configured {
+		makeNotConfiguredError(&resp.Diagnostics)
+		return
+	}
+
+	var dataOld Contact
+	diags := req.State.Get(ctx, &dataOld)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	_ = makeContactCommand(r.p.client, CommandDelete, Contact{
+		ID: dataOld.ID,
+	}, dataOld, resp.Diagnostics)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.State.RemoveResource(ctx)
 }
