@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hexonet/go-sdk/v3/apiclient"
-	"github.com/hexonet/go-sdk/v3/response"
 )
 
 func resourceNameserver() *schema.Resource {
@@ -20,26 +19,6 @@ func resourceNameserver() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 	}
-}
-
-func makeNameserverCommand(cl *apiclient.APIClient, cmd string, addData bool, d *schema.ResourceData) *response.Response {
-	nameserver := d.Get("name_server").(string)
-	if nameserver == "" {
-		nameserver = d.Id()
-	} else {
-		d.SetId(nameserver)
-	}
-
-	req := map[string]interface{}{
-		"COMMAND":    cmd,
-		"NAMESERVER": nameserver,
-	}
-
-	if addData {
-		fillRequestArray(d.Get("ip_addresses").([]interface{}), "IPADDRESS", req, MAX_IPADDRESS, true)
-	}
-
-	return cl.Request(req)
 }
 
 func resourceNameserverCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

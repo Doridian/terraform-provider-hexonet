@@ -8,16 +8,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hexonet/go-sdk/v3/apiclient"
+	"github.com/hexonet/go-sdk/v3/response"
 )
 
 const MAX_IPADDRESS = 12
 
 func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
 	res := map[string]*schema.Schema{
-		"id": {
-			Type:     schema.TypeString,
-			Computed: true,
-		},
 		"name_server": {
 			Type:     schema.TypeString,
 			Required: true,
@@ -48,6 +45,26 @@ func makeNameserverSchema(readOnly bool) map[string]*schema.Schema {
 	}
 
 	return res
+}
+
+func makeNameserverCommand(cl *apiclient.APIClient, cmd string, addData bool, d *schema.ResourceData) *response.Response {
+	nameserver := d.Get("name_server").(string)
+	if nameserver == "" {
+		nameserver = d.Id()
+	} else {
+		d.SetId(nameserver)
+	}
+
+	req := map[string]interface{}{
+		"COMMAND":    cmd,
+		"NAMESERVER": nameserver,
+	}
+
+	if addData {
+		fillRequestArray(d.Get("ip_addresses").([]interface{}), "IPADDRESS", req, MAX_IPADDRESS, true)
+	}
+
+	return cl.Request(req)
 }
 
 func kindNameserverRead(ctx context.Context, d *schema.ResourceData, m interface{}, addAll bool) diag.Diagnostics {

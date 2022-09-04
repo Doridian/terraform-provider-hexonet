@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hexonet/go-sdk/v3/apiclient"
+	"github.com/hexonet/go-sdk/v3/response"
 )
 
 const MAX_NAMESERVERS = 12
@@ -15,10 +16,6 @@ const MAX_CONTACTS = 3
 
 func makeDomainSchema(readOnly bool) map[string]*schema.Schema {
 	res := map[string]*schema.Schema{
-		"id": {
-			Type:     schema.TypeString,
-			Computed: true,
-		},
 		"domain": {
 			Type:     schema.TypeString,
 			Required: true,
@@ -94,6 +91,35 @@ func makeDomainSchema(readOnly bool) map[string]*schema.Schema {
 	}
 
 	return res
+}
+
+func makeDomainCommand(cl *apiclient.APIClient, cmd string, addData bool, d *schema.ResourceData) *response.Response {
+	domain := d.Get("domain").(string)
+	if domain == "" {
+		domain = d.Id()
+	} else {
+		d.SetId(domain)
+	}
+
+	req := map[string]interface{}{
+		"COMMAND": cmd,
+		"DOMAIN":  domain,
+	}
+
+	if addData {
+		fillRequestArray(d.Get("name_servers").([]interface{}), "NAMESERVER", req, MAX_NAMESERVERS, false)
+
+		fillRequestArray(d.Get("owner_contacts").([]interface{}), "OWNERCONTACT", req, 1, false)
+		fillRequestArray(d.Get("admin_contacts").([]interface{}), "ADMINCONTACT", req, MAX_CONTACTS, false)
+		fillRequestArray(d.Get("tech_contacts").([]interface{}), "TECHCONTACT", req, MAX_CONTACTS, false)
+		fillRequestArray(d.Get("billing_contacts").([]interface{}), "BILLINGCONTACT", req, MAX_CONTACTS, true)
+
+		req["TRANSFERLOCK"] = boolToNumberStr(d.Get("transfer_lock").(bool))
+
+		handleExtraAttributesWrite(d, req)
+	}
+
+	return cl.Request(req)
 }
 
 func kindDomainRead(ctx context.Context, d *schema.ResourceData, m interface{}, addAll bool) diag.Diagnostics {
