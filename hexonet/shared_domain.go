@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -31,6 +32,9 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Required: true,
+			Validators: []tfsdk.AttributeValidator{
+				listvalidator.SizeBetween(1, MAX_NAMESERVERS),
+			},
 		},
 		"transfer_lock": {
 			Type:     types.BoolType,
@@ -58,30 +62,23 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				NoDiffIfNull(),
-				NoDiffIfNullMapEntries(),
-			},
 		},
 		"owner_contacts": {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				NoDiffIfNull(),
+			Required: true,
+			Validators: []tfsdk.AttributeValidator{
+				listvalidator.SizeBetween(1, 1),
 			},
 		},
 		"admin_contacts": {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				NoDiffIfNull(),
+			Required: true,
+			Validators: []tfsdk.AttributeValidator{
+				listvalidator.SizeBetween(1, MAX_CONTACTS),
 			},
 		},
 		"tech_contacts": {
@@ -89,9 +86,8 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				NoDiffIfNull(),
+			Validators: []tfsdk.AttributeValidator{
+				listvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
 		},
 		"billing_contacts": {
@@ -99,9 +95,8 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				NoDiffIfNull(),
+			Validators: []tfsdk.AttributeValidator{
+				listvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
 		},
 	}

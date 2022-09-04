@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	custom_types "github.com/Doridian/terraform-provider-hexonet/hexonet/types"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -26,24 +27,12 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 		},
 		"ip_addresses": {
 			Type: types.ListType{
-				ElemType: types.StringType,
+				ElemType: &custom_types.IPAddressType{},
 			},
 			Required: true,
 			Validators: []tfsdk.AttributeValidator{
-				listvalidator.ValuesAre(IPAddressValidator{}),
+				listvalidator.SizeBetween(1, MAX_IPADDRESS),
 			},
-			/*Elem: &tfsdk.Schema{
-				Type: tfsdk.TypeString,
-				DiffSuppressFunc: func(k, old, new string, d *tfsdk.ResourceData) bool {
-					oldIp := net.ParseIP(old)
-					newIp := net.ParseIP(new)
-					if oldIp == nil || newIp == nil {
-						return false
-					}
-					return newIp.Equal(oldIp)
-				},
-				ValidateFunc: tfsdk.IsIPAddress,
-			},*/
 		},
 	}
 

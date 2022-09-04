@@ -87,11 +87,6 @@ func makeContactSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				NoDiffIfNull(),
-				NoDiffIfNullMapEntries(),
-			},
 		},
 	}
 

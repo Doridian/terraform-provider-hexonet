@@ -53,21 +53,20 @@ func fillRequestArray(list types.List, oldList types.List, prefix string, req ma
 		handleUnexpectedUnknown(diag)
 		return
 	}
-	if list.Null {
-		return
-	}
-
 	listIdx := 0
-	for _, item := range list.Elems {
-		if item.IsUnknown() {
-			handleUnexpectedUnknown(diag)
-			return
+
+	if !list.Null {
+		for _, item := range list.Elems {
+			if item.IsUnknown() {
+				handleUnexpectedUnknown(diag)
+				return
+			}
+			req[fmt.Sprintf("%s%d", prefix, listIdx)] = item.(types.String).Value
+			listIdx++
 		}
-		req[fmt.Sprintf("%s%d", prefix, listIdx)] = item.(types.String).Value
-		listIdx++
 	}
 
-	if oldList.Unknown {
+	if oldList.Null {
 		return
 	}
 
