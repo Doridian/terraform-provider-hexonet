@@ -3,6 +3,7 @@ package hexonet
 import (
 	"context"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -30,7 +31,7 @@ func (r resourceNameServerType) NewResource(_ context.Context, p provider.Provid
 
 func (r resourceNameServer) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -41,7 +42,7 @@ func (r resourceNameServer) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	_ = makeNameServerCommand(r.p.client, CommandCreate, data, NameServer{}, resp.Diagnostics)
+	_ = makeNameServerCommand(r.p.client, utils.CommandCreate, data, NameServer{}, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -55,7 +56,7 @@ func (r resourceNameServer) Create(ctx context.Context, req resource.CreateReque
 
 func (r resourceNameServer) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -75,7 +76,7 @@ func (r resourceNameServer) Read(ctx context.Context, req resource.ReadRequest, 
 
 func (r resourceNameServer) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -93,7 +94,7 @@ func (r resourceNameServer) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	_ = makeNameServerCommand(r.p.client, CommandUpdate, data, dataOld, resp.Diagnostics)
+	_ = makeNameServerCommand(r.p.client, utils.CommandUpdate, data, dataOld, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -107,7 +108,7 @@ func (r resourceNameServer) Update(ctx context.Context, req resource.UpdateReque
 
 func (r resourceNameServer) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -118,7 +119,7 @@ func (r resourceNameServer) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	_ = makeNameServerCommand(r.p.client, CommandDelete, NameServer{
+	_ = makeNameServerCommand(r.p.client, utils.CommandDelete, NameServer{
 		Host: dataOld.Host,
 	}, dataOld, resp.Diagnostics)
 

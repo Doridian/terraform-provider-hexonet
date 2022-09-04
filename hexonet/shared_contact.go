@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -124,12 +125,12 @@ type Contact struct {
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
 }
 
-func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, contact Contact, oldContact Contact, diag diag.Diagnostics) *response.Response {
+func makeContactCommand(cl *apiclient.APIClient, cmd utils.CommandType, contact Contact, oldContact Contact, diag diag.Diagnostics) *response.Response {
 	req := map[string]interface{}{
 		"COMMAND": fmt.Sprintf("%sContact", cmd),
 	}
 
-	if cmd == CommandCreate {
+	if cmd == utils.CommandCreate {
 		req["NEW"] = "1"
 	} else {
 		if contact.ID.Null || contact.ID.Unknown {
@@ -145,32 +146,32 @@ func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, contact Contac
 		req["CONTACT"] = contact.ID.Value
 	}
 
-	if cmd == CommandCreate || cmd == CommandUpdate {
+	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
 		optionals := []string{"TITLE", "MIDDLENAME", "ORGANIZATION", "STATE", "FAX"}
 
-		req["TITLE"] = autoUnboxString(contact.Title, "")
-		req["FIRSTNAME"] = autoUnboxString(contact.FirstName, "")
-		req["MIDDLENAME"] = autoUnboxString(contact.MiddleName, "")
-		req["LASTNAME"] = autoUnboxString(contact.LastName, "")
+		req["TITLE"] = utils.AutoUnboxString(contact.Title, "")
+		req["FIRSTNAME"] = utils.AutoUnboxString(contact.FirstName, "")
+		req["MIDDLENAME"] = utils.AutoUnboxString(contact.MiddleName, "")
+		req["LASTNAME"] = utils.AutoUnboxString(contact.LastName, "")
 
-		req["ORGANIZATION"] = autoUnboxString(contact.Organization, "")
+		req["ORGANIZATION"] = utils.AutoUnboxString(contact.Organization, "")
 
-		req["STREET0"] = autoUnboxString(contact.AddressLine1, "")
-		req["STREET1"] = autoUnboxString(contact.AddressLine2, "")
-		req["CITY"] = autoUnboxString(contact.City, "")
-		req["STATE"] = autoUnboxString(contact.State, "")
-		req["ZIP"] = autoUnboxString(contact.ZIP, "")
-		req["COUNTRY"] = autoUnboxString(contact.Coutry, "")
+		req["STREET0"] = utils.AutoUnboxString(contact.AddressLine1, "")
+		req["STREET1"] = utils.AutoUnboxString(contact.AddressLine2, "")
+		req["CITY"] = utils.AutoUnboxString(contact.City, "")
+		req["STATE"] = utils.AutoUnboxString(contact.State, "")
+		req["ZIP"] = utils.AutoUnboxString(contact.ZIP, "")
+		req["COUNTRY"] = utils.AutoUnboxString(contact.Coutry, "")
 
-		req["PHONE"] = autoUnboxString(contact.Phone, "")
-		req["FAX"] = autoUnboxString(contact.Fax, "")
-		req["EMAIL"] = autoUnboxString(contact.Email, "")
+		req["PHONE"] = utils.AutoUnboxString(contact.Phone, "")
+		req["FAX"] = utils.AutoUnboxString(contact.Fax, "")
+		req["EMAIL"] = utils.AutoUnboxString(contact.Email, "")
 
 		if !contact.Disclose.Null && !contact.Disclose.Unknown {
-			req["DISCLOSE"] = boolToNumberStr(contact.Disclose.Value)
+			req["DISCLOSE"] = utils.BoolToNumberStr(contact.Disclose.Value)
 		}
 
-		if cmd == CommandUpdate {
+		if cmd == utils.CommandUpdate {
 			i := 0
 			for _, optional := range optionals {
 				if req[optional] != "" {
@@ -183,41 +184,41 @@ func makeContactCommand(cl *apiclient.APIClient, cmd CommandType, contact Contac
 			}
 		}
 
-		handleExtraAttributesWrite(contact.ExtraAttributes, oldContact.ExtraAttributes, req)
+		utils.HandleExtraAttributesWrite(contact.ExtraAttributes, oldContact.ExtraAttributes, req)
 	}
 
 	return cl.Request(req)
 }
 
 func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClient, diag diag.Diagnostics) Contact {
-	resp := makeContactCommand(cl, CommandRead, contact, contact, diag)
+	resp := makeContactCommand(cl, utils.CommandRead, contact, contact, diag)
 	if diag.HasError() {
 		return Contact{}
 	}
 
 	return Contact{
-		ID: types.String{Value: columnFirstOrDefault(resp, "ID", "").(string)},
+		ID: types.String{Value: utils.ColumnFirstOrDefault(resp, "ID", "").(string)},
 
-		Title:      autoBoxString(columnFirstOrDefault(resp, "TITLE", nil)),
-		FirstName:  autoBoxString(columnFirstOrDefault(resp, "FIRSTNAME", nil)),
-		MiddleName: autoBoxString(columnFirstOrDefault(resp, "MIDDLENAME", nil)),
-		LastName:   autoBoxString(columnFirstOrDefault(resp, "LASTNAME", nil)),
+		Title:      utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "TITLE", nil)),
+		FirstName:  utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "FIRSTNAME", nil)),
+		MiddleName: utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "MIDDLENAME", nil)),
+		LastName:   utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "LASTNAME", nil)),
 
-		Organization: autoBoxString(columnFirstOrDefault(resp, "ORGANIZATION", nil)),
+		Organization: utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "ORGANIZATION", nil)),
 
-		AddressLine1: autoBoxString(columnIndexOrDefault(resp, "STREET", nil, 0)),
-		AddressLine2: autoBoxString(columnIndexOrDefault(resp, "STREET", nil, 1)),
-		City:         autoBoxString(columnFirstOrDefault(resp, "CITY", nil)),
-		ZIP:          autoBoxString(columnFirstOrDefault(resp, "ZIP", nil)),
-		State:        autoBoxString(columnFirstOrDefault(resp, "STATE", nil)),
-		Coutry:       autoBoxString(columnFirstOrDefault(resp, "COUNTRY", nil)),
+		AddressLine1: utils.AutoBoxString(utils.ColumnIndexOrDefault(resp, "STREET", nil, 0)),
+		AddressLine2: utils.AutoBoxString(utils.ColumnIndexOrDefault(resp, "STREET", nil, 1)),
+		City:         utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "CITY", nil)),
+		ZIP:          utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "ZIP", nil)),
+		State:        utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "STATE", nil)),
+		Coutry:       utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "COUNTRY", nil)),
 
-		Phone: autoBoxString(columnFirstOrDefault(resp, "PHONE", nil)),
-		Fax:   autoBoxString(columnFirstOrDefault(resp, "FAX", nil)),
-		Email: autoBoxString(columnFirstOrDefault(resp, "EMAIL", nil)),
+		Phone: utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "PHONE", nil)),
+		Fax:   utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "FAX", nil)),
+		Email: utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "EMAIL", nil)),
 
-		Disclose: autoBoxBoolNumberStr(columnFirstOrDefault(resp, "DISCLOSE", "0")),
+		Disclose: utils.AutoBoxBoolNumberStr(utils.ColumnFirstOrDefault(resp, "DISCLOSE", "0")),
 
-		ExtraAttributes: handleExtraAttributesRead(resp),
+		ExtraAttributes: utils.HandleExtraAttributesRead(resp),
 	}
 }

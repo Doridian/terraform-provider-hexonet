@@ -3,6 +3,7 @@ package hexonet
 import (
 	"context"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -29,7 +30,7 @@ func (d dataSourceNameServerType) NewDataSource(_ context.Context, p provider.Pr
 
 func (d dataSourceNameServer) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	if !d.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 

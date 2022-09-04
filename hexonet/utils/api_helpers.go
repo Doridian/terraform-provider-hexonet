@@ -1,4 +1,4 @@
-package hexonet
+package utils
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ const (
 )
 
 // Functions for dealing the the API "column" concept easier
-func columnIndexOrDefault(resp *response.Response, colName string, def interface{}, idx int) interface{} {
+func ColumnIndexOrDefault(resp *response.Response, colName string, def interface{}, idx int) interface{} {
 	col := resp.GetColumn(colName)
 	if col == nil {
 		return def
@@ -35,7 +35,7 @@ func columnIndexOrDefault(resp *response.Response, colName string, def interface
 	return data[idx]
 }
 
-func columnOrDefault(resp *response.Response, colName string, def []string) []string {
+func ColumnOrDefault(resp *response.Response, colName string, def []string) []string {
 	col := resp.GetColumn(colName)
 	if col == nil {
 		return def
@@ -43,14 +43,14 @@ func columnOrDefault(resp *response.Response, colName string, def []string) []st
 	return col.GetData()
 }
 
-func columnFirstOrDefault(resp *response.Response, colName string, def interface{}) interface{} {
-	return columnIndexOrDefault(resp, colName, def, 0)
+func ColumnFirstOrDefault(resp *response.Response, colName string, def interface{}) interface{} {
+	return ColumnIndexOrDefault(resp, colName, def, 0)
 }
 
 // Functions to handle deletion of "list"/"array" type API fields
-func fillRequestArray(list types.List, oldList types.List, prefix string, req map[string]interface{}, diag diag.Diagnostics) {
+func FillRequestArray(list types.List, oldList types.List, prefix string, req map[string]interface{}, diag diag.Diagnostics) {
 	if list.Unknown || oldList.Unknown {
-		handleUnexpectedUnknown(diag)
+		HandleUnexpectedUnknown(diag)
 		return
 	}
 	listIdx := 0
@@ -58,7 +58,7 @@ func fillRequestArray(list types.List, oldList types.List, prefix string, req ma
 	if !list.Null {
 		for _, item := range list.Elems {
 			if item.IsUnknown() {
-				handleUnexpectedUnknown(diag)
+				HandleUnexpectedUnknown(diag)
 				return
 			}
 			req[fmt.Sprintf("%s%d", prefix, listIdx)] = item.(types.String).Value
@@ -74,7 +74,7 @@ func fillRequestArray(list types.List, oldList types.List, prefix string, req ma
 	for listIdx < len(oldList.Elems) {
 		oldItem := oldList.Elems[listIdx]
 		if oldItem.IsUnknown() {
-			handleUnexpectedUnknown(diag)
+			HandleUnexpectedUnknown(diag)
 			return
 		}
 		req[fmt.Sprintf("DEL%s%d", prefix, i)] = oldItem.(types.String).Value
@@ -84,19 +84,19 @@ func fillRequestArray(list types.List, oldList types.List, prefix string, req ma
 }
 
 // Functions to handle booleans
-func boolToNumberStr(b bool) string {
+func BoolToNumberStr(b bool) string {
 	if b {
 		return "1"
 	}
 	return "0"
 }
 
-func numberStrToBool(str string) bool {
+func NumberStrToBool(str string) bool {
 	return str == "1"
 }
 
 // Functions to handle X- attributes
-func handleExtraAttributesRead(resp *response.Response) types.Map {
+func HandleExtraAttributesRead(resp *response.Response) types.Map {
 	extraAttributes := make(map[string]attr.Value)
 	keys := resp.GetColumnKeys()
 	for _, k := range keys {
@@ -107,7 +107,7 @@ func handleExtraAttributesRead(resp *response.Response) types.Map {
 		n := strings.ToUpper(k[2:])
 
 		// Treat empty string as not present, functionally identical
-		v := columnFirstOrDefault(resp, k, nil)
+		v := ColumnFirstOrDefault(resp, k, nil)
 		if v != nil && v != "" {
 			extraAttributes[n] = types.String{Value: v.(string)}
 		}
@@ -119,7 +119,7 @@ func handleExtraAttributesRead(resp *response.Response) types.Map {
 	}
 }
 
-func handleExtraAttributesWrite(extraAttributesBox types.Map, oldExtraAttributesBox types.Map, req map[string]interface{}) {
+func HandleExtraAttributesWrite(extraAttributesBox types.Map, oldExtraAttributesBox types.Map, req map[string]interface{}) {
 	// Get all the previous attributes and set them to empty string (remove)
 	// That way, if they are not in the current config, this will clear them correctly
 	if !oldExtraAttributesBox.Null && !oldExtraAttributesBox.Unknown {

@@ -3,6 +3,7 @@ package hexonet
 import (
 	"context"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -17,7 +18,7 @@ type dataSourceDomain struct {
 
 func (d dataSourceDomainType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: makeNameServerSchema(true),
+		Attributes: makeDomainSchema(true),
 	}, nil
 }
 
@@ -29,7 +30,7 @@ func (d dataSourceDomainType) NewDataSource(_ context.Context, p provider.Provid
 
 func (d dataSourceDomain) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	if !d.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 

@@ -1,4 +1,4 @@
-package hexonet
+package utils
 
 import (
 	"fmt"
@@ -7,11 +7,11 @@ import (
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
-func makeNotConfiguredError(diag *diag.Diagnostics) {
+func MakeNotConfiguredError(diag *diag.Diagnostics) {
 	diag.AddError("Provider not configured", "Please make sure the provider is configured correctly")
 }
 
-func handlePossibleErrorResponse(resp *response.Response, diag diag.Diagnostics) {
+func HandlePossibleErrorResponse(resp *response.Response, diag diag.Diagnostics) {
 	if !resp.IsError() {
 		return
 	}
@@ -22,7 +22,7 @@ func handlePossibleErrorResponse(resp *response.Response, diag diag.Diagnostics)
 	)
 }
 
-func handleUnexpectedUnknown(diag diag.Diagnostics) {
+func HandleUnexpectedUnknown(diag diag.Diagnostics) {
 	diag.AddError(
 		"Encountered Unknown value in list",
 		"Please ensure all lists and values in them are null or values",

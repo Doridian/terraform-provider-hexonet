@@ -1,11 +1,11 @@
-package hexonet
+package utils
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func stringListToAttrList(elems []string) types.List {
+func StringListToAttrList(elems []string) types.List {
 	res := types.List{
 		ElemType: types.StringType,
 		Elems:    make([]attr.Value, 0, len(elems)),
@@ -18,7 +18,7 @@ func stringListToAttrList(elems []string) types.List {
 	return res
 }
 
-func autoBoxString(str interface{}) types.String {
+func AutoBoxString(str interface{}) types.String {
 	if str == nil || str == "" {
 		return types.String{
 			Null: true,
@@ -30,7 +30,7 @@ func autoBoxString(str interface{}) types.String {
 	}
 }
 
-func autoBoxBoolNumberStr(str interface{}) types.Bool {
+func AutoBoxBoolNumberStr(str interface{}) types.Bool {
 	if str == nil {
 		return types.Bool{
 			Null: true,
@@ -38,11 +38,11 @@ func autoBoxBoolNumberStr(str interface{}) types.Bool {
 	}
 
 	return types.Bool{
-		Value: numberStrToBool(str.(string)),
+		Value: NumberStrToBool(str.(string)),
 	}
 }
 
-func autoUnboxString(str types.String, def string) string {
+func AutoUnboxString(str types.String, def string) string {
 	if str.Null || str.Unknown {
 		return def
 	}

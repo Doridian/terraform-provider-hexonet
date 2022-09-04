@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -125,7 +126,7 @@ type Domain struct {
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
 }
 
-func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, domain Domain, oldDomain Domain, diag diag.Diagnostics) *response.Response {
+func makeDomainCommand(cl *apiclient.APIClient, cmd utils.CommandType, domain Domain, oldDomain Domain, diag diag.Diagnostics) *response.Response {
 	if domain.Domain.Null || domain.Domain.Unknown {
 		diag.AddError("Main ID attribute unknwon or null", "domain is null or unknown")
 		return nil
@@ -136,46 +137,48 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd CommandType, domain Domain, 
 		"DOMAIN":  domain.Domain.Value,
 	}
 
-	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(domain.NameServers, oldDomain.NameServers, "NAMESERVER", req, diag)
+	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
+		utils.FillRequestArray(domain.NameServers, oldDomain.NameServers, "NAMESERVER", req, diag)
 
-		fillRequestArray(domain.OwnerContacts, oldDomain.OwnerContacts, "OWNERCONTACT", req, diag)
-		fillRequestArray(domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req, diag)
-		fillRequestArray(domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req, diag)
-		fillRequestArray(domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req, diag)
+		utils.FillRequestArray(domain.OwnerContacts, oldDomain.OwnerContacts, "OWNERCONTACT", req, diag)
+		utils.FillRequestArray(domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req, diag)
+		utils.FillRequestArray(domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req, diag)
+		utils.FillRequestArray(domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req, diag)
 
-		if !domain.TransferLock.Null && !domain.TransferLock.Unknown {
-			req["TRANSFERLOCK"] = boolToNumberStr(domain.TransferLock.Value)
+		if domain.TransferLock.Unknown {
+			utils.HandleUnexpectedUnknown(diag)
+			return nil
 		}
+		req["TRANSFERLOCK"] = utils.BoolToNumberStr(domain.TransferLock.Value)
 
-		handleExtraAttributesWrite(domain.ExtraAttributes, oldDomain.ExtraAttributes, req)
+		utils.HandleExtraAttributesWrite(domain.ExtraAttributes, oldDomain.ExtraAttributes, req)
 	}
 
 	resp := cl.Request(req)
-	handlePossibleErrorResponse(resp, diag)
+	utils.HandlePossibleErrorResponse(resp, diag)
 	return resp
 }
 
 func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient, diag diag.Diagnostics) Domain {
-	resp := makeDomainCommand(cl, CommandRead, domain, domain, diag)
+	resp := makeDomainCommand(cl, utils.CommandRead, domain, domain, diag)
 	if diag.HasError() {
 		return Domain{}
 	}
 
 	return Domain{
-		Domain: types.String{Value: columnFirstOrDefault(resp, "ID", "").(string)},
+		Domain: types.String{Value: utils.ColumnFirstOrDefault(resp, "ID", "").(string)},
 
-		NameServers: stringListToAttrList(columnOrDefault(resp, "NAMESERVER", []string{})),
+		NameServers: utils.StringListToAttrList(utils.ColumnOrDefault(resp, "NAMESERVER", []string{})),
 
-		TransferLock: autoBoxBoolNumberStr(columnFirstOrDefault(resp, "TRANSFERLOCK", nil)),
-		Status:       stringListToAttrList(columnOrDefault(resp, "STATUS", []string{})),
-		AuthCode:     types.String{Value: columnFirstOrDefault(resp, "AUTH", "").(string)},
+		TransferLock: utils.AutoBoxBoolNumberStr(utils.ColumnFirstOrDefault(resp, "TRANSFERLOCK", nil)),
+		Status:       utils.StringListToAttrList(utils.ColumnOrDefault(resp, "STATUS", []string{})),
+		AuthCode:     types.String{Value: utils.ColumnFirstOrDefault(resp, "AUTH", "").(string)},
 
-		OwnerContacts:   stringListToAttrList(columnOrDefault(resp, "OWNERCONTACT", []string{})),
-		AdminContacts:   stringListToAttrList(columnOrDefault(resp, "ADMINCONTACT", []string{})),
-		TechContacts:    stringListToAttrList(columnOrDefault(resp, "TECHCONTACT", []string{})),
-		BillingContacts: stringListToAttrList(columnOrDefault(resp, "BILLINGCONTACT", []string{})),
+		OwnerContacts:   utils.StringListToAttrList(utils.ColumnOrDefault(resp, "OWNERCONTACT", []string{})),
+		AdminContacts:   utils.StringListToAttrList(utils.ColumnOrDefault(resp, "ADMINCONTACT", []string{})),
+		TechContacts:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "TECHCONTACT", []string{})),
+		BillingContacts: utils.StringListToAttrList(utils.ColumnOrDefault(resp, "BILLINGCONTACT", []string{})),
 
-		ExtraAttributes: handleExtraAttributesRead(resp),
+		ExtraAttributes: utils.HandleExtraAttributesRead(resp),
 	}
 }

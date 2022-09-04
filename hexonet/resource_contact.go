@@ -3,6 +3,7 @@ package hexonet
 import (
 	"context"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -30,7 +31,7 @@ func (r resourceContactType) NewResource(_ context.Context, p provider.Provider)
 
 func (r resourceContact) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -41,7 +42,7 @@ func (r resourceContact) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	_ = makeContactCommand(r.p.client, CommandCreate, data, Contact{}, resp.Diagnostics)
+	_ = makeContactCommand(r.p.client, utils.CommandCreate, data, Contact{}, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -55,7 +56,7 @@ func (r resourceContact) Create(ctx context.Context, req resource.CreateRequest,
 
 func (r resourceContact) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -75,7 +76,7 @@ func (r resourceContact) Read(ctx context.Context, req resource.ReadRequest, res
 
 func (r resourceContact) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -93,7 +94,7 @@ func (r resourceContact) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	_ = makeContactCommand(r.p.client, CommandUpdate, data, dataOld, resp.Diagnostics)
+	_ = makeContactCommand(r.p.client, utils.CommandUpdate, data, dataOld, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -107,7 +108,7 @@ func (r resourceContact) Update(ctx context.Context, req resource.UpdateRequest,
 
 func (r resourceContact) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -118,7 +119,7 @@ func (r resourceContact) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	_ = makeContactCommand(r.p.client, CommandDelete, Contact{
+	_ = makeContactCommand(r.p.client, utils.CommandDelete, Contact{
 		ID: dataOld.ID,
 	}, dataOld, resp.Diagnostics)
 

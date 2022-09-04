@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	custom_types "github.com/Doridian/terraform-provider-hexonet/hexonet/types"
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -27,7 +27,7 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 		},
 		"ip_addresses": {
 			Type: types.ListType{
-				ElemType: &custom_types.IPAddressType{},
+				ElemType: &utils.IPAddressType{},
 			},
 			Required: true,
 			Validators: []tfsdk.AttributeValidator{
@@ -48,7 +48,7 @@ type NameServer struct {
 	IpAddresses types.List   `tfsdk:"ip_addresses"`
 }
 
-func makeNameServerCommand(cl *apiclient.APIClient, cmd CommandType, ns NameServer, oldNs NameServer, diag diag.Diagnostics) *response.Response {
+func makeNameServerCommand(cl *apiclient.APIClient, cmd utils.CommandType, ns NameServer, oldNs NameServer, diag diag.Diagnostics) *response.Response {
 	if ns.Host.Null || ns.Host.Unknown {
 		diag.AddError("Main ID attribute unknwon or null", "host is null or unknown")
 		return nil
@@ -59,24 +59,24 @@ func makeNameServerCommand(cl *apiclient.APIClient, cmd CommandType, ns NameServ
 		"NAMESERVER": ns.Host.Value,
 	}
 
-	if cmd == CommandCreate || cmd == CommandUpdate {
-		fillRequestArray(ns.IpAddresses, oldNs.IpAddresses, "IPADDRESS", req, diag)
+	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
+		utils.FillRequestArray(ns.IpAddresses, oldNs.IpAddresses, "IPADDRESS", req, diag)
 	}
 
 	resp := cl.Request(req)
-	handlePossibleErrorResponse(resp, diag)
+	utils.HandlePossibleErrorResponse(resp, diag)
 	return resp
 }
 
 func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, diag diag.Diagnostics) NameServer {
-	resp := makeNameServerCommand(cl, CommandRead, ns, ns, diag)
+	resp := makeNameServerCommand(cl, utils.CommandRead, ns, ns, diag)
 	if diag.HasError() {
 		return ns
 	}
 
 	return NameServer{
-		Host: types.String{Value: columnFirstOrDefault(resp, "HOST", "").(string)},
+		Host: types.String{Value: utils.ColumnFirstOrDefault(resp, "HOST", "").(string)},
 
-		IpAddresses: stringListToAttrList(resp.GetColumn("IPADDRESS").GetData()),
+		IpAddresses: utils.StringListToAttrList(resp.GetColumn("IPADDRESS").GetData()),
 	}
 }

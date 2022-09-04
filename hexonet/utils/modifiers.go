@@ -1,4 +1,4 @@
-package hexonet
+package utils
 
 import (
 	"context"

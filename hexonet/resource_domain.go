@@ -3,6 +3,7 @@ package hexonet
 import (
 	"context"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -30,7 +31,7 @@ func (r resourceDomainType) NewResource(_ context.Context, p provider.Provider) 
 
 func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -41,7 +42,7 @@ func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(r.p.client, CommandCreate, data, Domain{}, resp.Diagnostics)
+	_ = makeDomainCommand(r.p.client, utils.CommandCreate, data, Domain{}, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -55,7 +56,7 @@ func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, 
 
 func (r resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -75,7 +76,7 @@ func (r resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp
 
 func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -93,7 +94,7 @@ func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(r.p.client, CommandUpdate, data, dataOld, resp.Diagnostics)
+	_ = makeDomainCommand(r.p.client, utils.CommandUpdate, data, dataOld, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -107,7 +108,7 @@ func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, 
 
 func (r resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	if !r.p.configured {
-		makeNotConfiguredError(&resp.Diagnostics)
+		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
@@ -118,7 +119,7 @@ func (r resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(r.p.client, CommandDelete, Domain{
+	_ = makeDomainCommand(r.p.client, utils.CommandDelete, Domain{
 		Domain: dataOld.Domain,
 	}, dataOld, resp.Diagnostics)
 

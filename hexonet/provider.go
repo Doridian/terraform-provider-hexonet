@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -154,7 +155,7 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		res = c.Login(mfaToken)
 	}
 
-	handlePossibleErrorResponse(res, resp.Diagnostics)
+	utils.HandlePossibleErrorResponse(res, resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
 		return
