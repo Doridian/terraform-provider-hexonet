@@ -67,7 +67,7 @@ func numberStrToBool(str string) bool {
 	return str == "1"
 }
 
-func handleExtraAttributesRead(d *schema.ResourceData, resp *response.Response) {
+func handleExtraAttributesRead(d *schema.ResourceData, resp *response.Response, addAll bool) {
 	oldExtraAttributes := d.Get("extra_attributes").(map[string]interface{})
 	extraAttributes := make(map[string]interface{})
 	keys := resp.GetColumnKeys()
@@ -80,7 +80,7 @@ func handleExtraAttributesRead(d *schema.ResourceData, resp *response.Response) 
 
 		// Do not load unused X- attributes, there is too many to enforce using every one
 		_, ok := oldExtraAttributes[n]
-		if !ok {
+		if !ok && !addAll {
 			continue
 		}
 
