@@ -40,11 +40,6 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			},
 			Description: fmt.Sprintf("Name servers to associate with the domain (between 1 and %d)", MAX_NAMESERVERS),
 		},
-		"transfer_lock": {
-			Type:        types.BoolType,
-			Required:    true,
-			Description: "Whether to enable transfer lock",
-		},
 		"auth_code": {
 			Type:      types.StringType,
 			Sensitive: true,
@@ -127,9 +122,8 @@ type Domain struct {
 	TechContacts    types.Set `tfsdk:"tech_contacts"`
 	BillingContacts types.Set `tfsdk:"billing_contacts"`
 
-	TransferLock types.Bool   `tfsdk:"transfer_lock"`
-	Status       types.Set    `tfsdk:"status"`
-	AuthCode     types.String `tfsdk:"auth_code"`
+	Status   types.Set    `tfsdk:"status"`
+	AuthCode types.String `tfsdk:"auth_code"`
 
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
 }
@@ -154,11 +148,6 @@ func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.C
 		utils.FillRequestArray(ctx, domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req, diags)
 		utils.FillRequestArray(ctx, domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req, diags)
 		utils.FillRequestArray(ctx, domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req, diags)
-
-		if domain.TransferLock.Unknown {
-			utils.HandleUnexpectedUnknown(diags)
-		}
-		req["TRANSFERLOCK"] = utils.BoolToNumberStr(domain.TransferLock.Value)
 
 		utils.HandleExtraAttributesWrite(domain.ExtraAttributes, oldDomain.ExtraAttributes, req)
 	}
@@ -186,7 +175,6 @@ func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient,
 			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "NAMESERVER", []string{})),
 		},
 
-		TransferLock: utils.AutoBoxBoolNumberStr(utils.ColumnFirstOrDefault(resp, "TRANSFERLOCK", nil)),
 		Status: types.Set{
 			ElemType: types.StringType,
 			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "STATUS", []string{})),
