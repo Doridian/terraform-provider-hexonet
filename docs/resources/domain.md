@@ -3,12 +3,12 @@
 page_title: "hexonet_domain Resource - terraform-provider-hexonet"
 subcategory: ""
 description: |-
-  Domain object, can be used to configure most attributes of domains (careful, this can send DeleteDomain calls and actually unregister domains, use a role without that permission if you don't want that!)
+  Domain object, can be used to configure most attributes of domains
 ---
 
 # hexonet_domain (Resource)
 
-Domain object, can be used to configure most attributes of domains (careful, this can send DeleteDomain calls and actually unregister domains, use a role without that permission if you don't want that!)
+Domain object, can be used to configure most attributes of domains
 
 
 

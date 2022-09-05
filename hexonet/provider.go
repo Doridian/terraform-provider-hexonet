@@ -20,8 +20,9 @@ func New() provider.Provider {
 }
 
 type localProvider struct {
-	configured bool
-	client     *apiclient.APIClient
+	allowDomainCreateDelete bool
+	configured              bool
+	client                  *apiclient.APIClient
 }
 
 func envVarForKey(key string) string {
@@ -67,18 +68,24 @@ func (p *localProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnos
 				Optional:    true,
 				Description: envDescription("Whether to use high-performance connection establishment (might need additional setup)", "high_performance"),
 			},
+			"allow_domain_create_delete": {
+				Type:        types.BoolType,
+				Required:    true,
+				Description: "Whether to use AddDomain / DeleteDomain to send domain registration/deletion requests, otherwise will only read and update domains, never register or delete (extreme caution should be taken when enabling this option!)",
+			},
 		},
 		Description: "Provider for Hexonet domain API",
 	}, nil
 }
 
 type localProviderData struct {
-	Username        types.String `tfsdk:"username"`
-	Role            types.String `tfsdk:"role"`
-	Password        types.String `tfsdk:"password"`
-	MfaToken        types.String `tfsdk:"mfa_token"`
-	Live            types.Bool   `tfsdk:"live"`
-	HighPerformance types.Bool   `tfsdk:"high_performance"`
+	Username                types.String `tfsdk:"username"`
+	Role                    types.String `tfsdk:"role"`
+	Password                types.String `tfsdk:"password"`
+	MfaToken                types.String `tfsdk:"mfa_token"`
+	Live                    types.Bool   `tfsdk:"live"`
+	HighPerformance         types.Bool   `tfsdk:"high_performance"`
+	AllowDomainCreateDelete types.Bool   `tfsdk:"allow_domain_create_delete"`
 }
 
 func (p *localProvider) GetResources(_ context.Context) (map[string]provider.ResourceType, diag.Diagnostics) {
@@ -122,6 +129,12 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if !config.AllowDomainCreateDelete.Null && !config.AllowDomainCreateDelete.Unknown {
+		p.allowDomainCreateDelete = config.AllowDomainCreateDelete.Value
+	} else {
+		p.allowDomainCreateDelete = false
 	}
 
 	username := getValueOrDefaultToEnv(config.Username, "username", resp, false)

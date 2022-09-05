@@ -20,7 +20,7 @@ type resourceDomain struct {
 func (r resourceDomainType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeDomainSchema(false),
-		Description: "Domain object, can be used to configure most attributes of domains (careful, this can send DeleteDomain calls and actually unregister domains, use a role without that permission if you don't want that!)",
+		Description: "Domain object, can be used to configure most attributes of domains",
 	}, nil
 }
 
@@ -43,9 +43,11 @@ func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(ctx, r.p.client, utils.CommandCreate, data, Domain{}, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
+	if r.p.allowDomainCreateDelete {
+		_ = makeDomainCommand(ctx, r.p.client, utils.CommandCreate, data, Domain{}, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	data = kindDomainRead(ctx, data, r.p.client, &resp.Diagnostics)
@@ -120,13 +122,16 @@ func (r resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(ctx, r.p.client, utils.CommandDelete, Domain{
-		Domain: dataOld.Domain,
-	}, dataOld, &resp.Diagnostics)
+	if r.p.allowDomainCreateDelete {
+		_ = makeDomainCommand(ctx, r.p.client, utils.CommandDelete, Domain{
+			Domain: dataOld.Domain,
+		}, dataOld, &resp.Diagnostics)
 
-	if resp.Diagnostics.HasError() {
-		return
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
+
 	resp.State.RemoveResource(ctx)
 }
 
