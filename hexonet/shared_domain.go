@@ -88,6 +88,9 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
+			Validators: []tfsdk.AttributeValidator{
+				setvalidator.SizeBetween(1, MAX_CONTACTS),
+			},
 			Description: fmt.Sprintf("Admin contacts (ADMIN-C) (list must have between 1 and %d entries)", MAX_CONTACTS),
 		},
 		"tech_contacts": {
@@ -99,6 +102,9 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
+			Validators: []tfsdk.AttributeValidator{
+				setvalidator.SizeBetween(0, MAX_CONTACTS),
+			},
 			Description: fmt.Sprintf("Tech contacts (TECH-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
 		"billing_contacts": {
@@ -109,6 +115,9 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Computed: true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
+			},
+			Validators: []tfsdk.AttributeValidator{
+				setvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
 			Description: fmt.Sprintf("Billing contacts (BILLING-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
