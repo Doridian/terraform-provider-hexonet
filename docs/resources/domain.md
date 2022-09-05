@@ -26,7 +26,7 @@ Domain object, can be used to configure most attributes of domains (careful, thi
 ### Optional
 
 - `billing_contacts` (List of String) Billing contacts (BILLING-C) (list must have between 0 and 3 entries)
-- `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see: https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)
+- `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/MODIFYDOMAIN.md)
 - `tech_contacts` (List of String) Tech contacts (TECH-C) (list must have between 0 and 3 entries)
 
 ### Read-Only

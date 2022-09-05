@@ -108,7 +108,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Optional:    true,
-			Description: "Map of X- attributes, the X- is prefixed automatically (see: https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)",
+			Description: "Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/MODIFYDOMAIN.md)",
 		},
 	}
 

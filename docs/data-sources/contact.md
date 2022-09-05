@@ -27,7 +27,7 @@ Contact object, used for domain owner/admin/...
 - `country` (String) Country (2-letter country code)
 - `disclose` (Boolean) Whether to disclose personal details of this contact publicly
 - `email` (String) E-Mail address
-- `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see: https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)
+- `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)
 - `fax` (String) Fax number (example: +1.5555555555)
 - `first_name` (String) First name of contact person
 - `id_authority` (String, Sensitive) Authority of the government ID used in id_number

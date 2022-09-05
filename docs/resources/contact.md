@@ -30,7 +30,7 @@ Contact object, used for domain owner/admin/...
 ### Optional
 
 - `address_line_2` (String) Address line 2
-- `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see: https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)
+- `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)
 - `fax` (String) Fax number (example: +1.5555555555)
 - `id_authority` (String, Sensitive) Authority of the government ID used in id_number
 - `id_number` (String, Sensitive) Government ID number
