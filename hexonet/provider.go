@@ -24,36 +24,51 @@ type localProvider struct {
 	client     *apiclient.APIClient
 }
 
+func envVarForKey(key string) string {
+	return fmt.Sprintf("HEXONET_%s", strings.ToUpper(key))
+}
+
+func envDescription(desc, key string) string {
+	return fmt.Sprintf("%s (environment variable %s)", desc, envVarForKey(key))
+}
+
 func (p *localProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"username": {
-				Type:     types.StringType,
-				Optional: true,
+				Type:        types.StringType,
+				Optional:    true,
+				Description: envDescription("Username", "username"),
 			},
 			"role": {
-				Type:     types.StringType,
-				Optional: true,
+				Type:        types.StringType,
+				Optional:    true,
+				Description: envDescription("Role (sub-user)", "role"),
 			},
 			"password": {
-				Type:      types.StringType,
-				Sensitive: true,
-				Optional:  true,
+				Type:        types.StringType,
+				Sensitive:   true,
+				Optional:    true,
+				Description: envDescription("Password", "password"),
 			},
 			"mfa_token": {
-				Type:      types.StringType,
-				Sensitive: true,
-				Optional:  true,
+				Type:        types.StringType,
+				Sensitive:   true,
+				Optional:    true,
+				Description: envDescription("MFA token (required if MFA is enabled)", "mfa_token"),
 			},
 			"live": {
-				Type:     types.BoolType,
-				Optional: true,
+				Type:        types.BoolType,
+				Optional:    true,
+				Description: envDescription("Whether to use the live (true) or the OTE/test (false) system", "live"),
 			},
 			"high_performance": {
-				Type:     types.BoolType,
-				Optional: true,
+				Type:        types.BoolType,
+				Optional:    true,
+				Description: envDescription("Whether to use high-performance connection establishment (might need additional setup)", "high_performance"),
 			},
 		},
+		Description: "Provider for Hexonet domain API",
 	}, nil
 }
 
@@ -82,21 +97,21 @@ func (p *localProvider) GetDataSources(_ context.Context) (map[string]provider.D
 	}, nil
 }
 
-func getValueOrDefaultToEnv(val types.String, env string, resp *provider.ConfigureResponse, allowEmpty bool) string {
+func getValueOrDefaultToEnv(val types.String, key string, resp *provider.ConfigureResponse, allowEmpty bool) string {
 	if val.Unknown {
-		resp.Diagnostics.AddError("Can not configure client", fmt.Sprintf("Unknown value for %s", env))
+		resp.Diagnostics.AddError("Can not configure client", fmt.Sprintf("Unknown value for %s", key))
 		return ""
 	}
 
 	var res string
 	if val.Null {
-		res = os.Getenv(fmt.Sprintf("HEXONET_%s", strings.ToUpper(env)))
+		res = os.Getenv(envVarForKey(key))
 	} else {
 		res = val.Value
 	}
 
 	if res == "" && !allowEmpty {
-		resp.Diagnostics.AddError("Can not configure client", fmt.Sprintf("Empty value for %s", env))
+		resp.Diagnostics.AddError("Can not configure client", fmt.Sprintf("Empty value for %s", key))
 	}
 	return res
 }

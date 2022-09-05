@@ -3,12 +3,12 @@
 page_title: "hexonet Provider"
 subcategory: ""
 description: |-
-  
+  Provider for Hexonet domain API
 ---
 
 # hexonet Provider
 
-
+Provider for Hexonet domain API
 
 
 
@@ -17,9 +17,9 @@ description: |-
 
 ### Optional
 
-- `high_performance` (Boolean)
-- `live` (Boolean)
-- `mfa_token` (String, Sensitive)
-- `password` (String, Sensitive)
-- `role` (String)
-- `username` (String)
+- `high_performance` (Boolean) Whether to use high-performance connection establishment (might need additional setup) (environment variable HEXONET_HIGH_PERFORMANCE)
+- `live` (Boolean) Whether to use the live (true) or the OTE/test (false) system (environment variable HEXONET_LIVE)
+- `mfa_token` (String, Sensitive) MFA token (required if MFA is enabled) (environment variable HEXONET_MFA_TOKEN)
+- `password` (String, Sensitive) Password (environment variable HEXONET_PASSWORD)
+- `role` (String) Role (sub-user) (environment variable HEXONET_ROLE)
+- `username` (String) Username (environment variable HEXONET_USERNAME)
