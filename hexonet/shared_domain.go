@@ -3,6 +3,7 @@ package hexonet
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -34,7 +35,11 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Type: types.ListType{ // This is a list because it is ordered and order can be user-configured
 				ElemType: types.StringType,
 			},
-			Required: true,
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
 			Validators: []tfsdk.AttributeValidator{
 				listvalidator.SizeBetween(1, MAX_NAMESERVERS),
 			},
@@ -53,14 +58,22 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Type: types.SetType{
 				ElemType: types.StringType,
 			},
-			Required:    true,
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
 			Description: "Various status flags of the domain (clientTransferProhibited, ...)",
 		},
 		"owner_contacts": {
 			Type: types.SetType{
 				ElemType: types.StringType,
 			},
-			Required: true,
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
 			Validators: []tfsdk.AttributeValidator{
 				setvalidator.SizeBetween(1, 1),
 			},
@@ -70,9 +83,10 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Type: types.SetType{
 				ElemType: types.StringType,
 			},
-			Required: true,
-			Validators: []tfsdk.AttributeValidator{
-				setvalidator.SizeBetween(1, MAX_CONTACTS),
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
 			},
 			Description: fmt.Sprintf("Admin contacts (ADMIN-C) (list must have between 1 and %d entries)", MAX_CONTACTS),
 		},
@@ -81,8 +95,9 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Optional: true,
-			Validators: []tfsdk.AttributeValidator{
-				setvalidator.SizeBetween(0, MAX_CONTACTS),
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
 			},
 			Description: fmt.Sprintf("Tech contacts (TECH-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
@@ -91,16 +106,52 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 				ElemType: types.StringType,
 			},
 			Optional: true,
-			Validators: []tfsdk.AttributeValidator{
-				setvalidator.SizeBetween(0, MAX_CONTACTS),
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
 			},
 			Description: fmt.Sprintf("Billing contacts (BILLING-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
+		},
+		"dnssec_ds_records": {
+			Type: types.SetType{
+				ElemType: types.StringType,
+			},
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
+			Description: "DNSSEC DS records",
+		},
+		"dnssec_dnskey_records": {
+			Type: types.SetType{
+				ElemType: types.StringType,
+			},
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
+			Description: "DNSSEC DNSKEY records",
+		},
+		"dnssec_max_sig_lifespan": {
+			Type:     types.Int64Type,
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
+			Description: "DNSSEC maximum key lifespan",
 		},
 		"extra_attributes": {
 			Type: types.MapType{
 				ElemType: types.StringType,
 			},
-			Optional:    true,
+			Optional: true,
+			Computed: true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
 			Description: "Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/MODIFYDOMAIN.md)",
 		},
 	}
@@ -126,6 +177,10 @@ type Domain struct {
 	AuthCode types.String `tfsdk:"auth_code"`
 
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
+
+	DNSSECDSRecords      types.Set   `tfsdk:"dnssec_ds_records"`
+	DNSSECDnsKeyRecords  types.Set   `tfsdk:"dnssec_dnskey_records"`
+	DNSSECMaxSigLifespan types.Int64 `tfsdk:"dnssec_max_sig_lifespan"`
 }
 
 func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, domain Domain, oldDomain Domain, diags *diag.Diagnostics) *response.Response {
@@ -149,6 +204,15 @@ func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.C
 		utils.FillRequestArray(ctx, domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req, diags)
 		utils.FillRequestArray(ctx, domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req, diags)
 
+		utils.FillRequestArray(ctx, domain.DNSSECDSRecords, oldDomain.DNSSECDSRecords, "SECDNS-DS", req, diags)
+		utils.FillRequestArray(ctx, domain.DNSSECDnsKeyRecords, oldDomain.DNSSECDnsKeyRecords, "SECDNS-KEY", req, diags)
+
+		if !domain.DNSSECMaxSigLifespan.Unknown && !domain.DNSSECMaxSigLifespan.Null {
+			req["SECDNS-MAXSIGLIFE"] = fmt.Sprintf("%d", domain.DNSSECMaxSigLifespan.Value)
+		} else {
+			req["SECDNS-MAXSIGLIFE"] = "0"
+		}
+
 		utils.HandleExtraAttributesWrite(domain.ExtraAttributes, oldDomain.ExtraAttributes, req)
 	}
 
@@ -165,6 +229,22 @@ func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient,
 	resp := makeDomainCommand(ctx, cl, utils.CommandRead, domain, domain, diags)
 	if diags.HasError() {
 		return Domain{}
+	}
+
+	var maxSigLife types.Int64
+	msl := utils.ColumnFirstOrDefault(resp, "SECDNS-MAXSIGLIFE", nil)
+	if msl == nil || msl == "" {
+		maxSigLife = types.Int64{Value: 0}
+	} else {
+		i, err := strconv.Atoi(msl.(string))
+		if err != nil {
+			diags.AddError(
+				"Error reading SECDNS-MAXSIGLIFE",
+				err.Error(),
+			)
+			return Domain{}
+		}
+		maxSigLife = types.Int64{Value: int64(i)}
 	}
 
 	return Domain{
@@ -197,6 +277,17 @@ func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient,
 			ElemType: types.StringType,
 			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "BILLINGCONTACT", []string{})),
 		},
+
+		DNSSECDSRecords: types.Set{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "SECDNS-DS", []string{})),
+		},
+		DNSSECDnsKeyRecords: types.Set{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "SECDNS-KEY", []string{})),
+		},
+
+		DNSSECMaxSigLifespan: maxSigLife,
 
 		ExtraAttributes: utils.HandleExtraAttributesRead(resp),
 	}
