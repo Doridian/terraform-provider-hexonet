@@ -18,7 +18,8 @@ type dataSourceDomain struct {
 
 func (d dataSourceDomainType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: makeDomainSchema(true),
+		Attributes:  makeDomainSchema(true),
+		Description: "Domain object",
 	}, nil
 }
 

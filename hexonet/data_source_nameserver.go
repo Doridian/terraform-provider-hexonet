@@ -18,7 +18,8 @@ type dataSourceNameServer struct {
 
 func (d dataSourceNameServerType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: makeNameServerSchema(true),
+		Attributes:  makeNameServerSchema(true),
+		Description: "Nameserver object, used to register so-called \"glue\" records when a domain's nameservers use hosts on the same domain (example: example.com using ns1.example.com)",
 	}, nil
 }
 

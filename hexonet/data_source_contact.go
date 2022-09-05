@@ -18,7 +18,8 @@ type dataSourceContact struct {
 
 func (d dataSourceContactType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: makeContactSchema(true),
+		Attributes:  makeContactSchema(true),
+		Description: "Contact object, used for domain owner/admin/...",
 	}, nil
 }
 

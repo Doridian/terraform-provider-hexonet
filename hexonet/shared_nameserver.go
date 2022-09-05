@@ -25,6 +25,7 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.RequiresReplace(),
 			},
+			Description: "Hostname of the nameserver (example: ns1.example.com)",
 		},
 		"ip_addresses": {
 			Type:       utils.ValidatedListType(ipAddressType),
@@ -32,6 +33,7 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Validators: []tfsdk.AttributeValidator{
 				//listvalidator.SizeBetween(1, MAX_IPADDRESS),
 			},
+			Description: fmt.Sprintf("IP addresses of the nameserver (list must have between 1 and %d entries)", MAX_IPADDRESS),
 		},
 	}
 

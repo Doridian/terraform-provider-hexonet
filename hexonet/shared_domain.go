@@ -27,6 +27,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.RequiresReplace(),
 			},
+			Description: "Domain name (example: example.com)",
 		},
 		"name_servers": {
 			Type: types.ListType{
@@ -36,10 +37,12 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Validators: []tfsdk.AttributeValidator{
 				listvalidator.SizeBetween(1, MAX_NAMESERVERS),
 			},
+			Description: fmt.Sprintf("Name servers to associate with the domain (between 1 and %d)", MAX_NAMESERVERS),
 		},
 		"transfer_lock": {
-			Type:     types.BoolType,
-			Required: true,
+			Type:        types.BoolType,
+			Required:    true,
+			Description: "Whether to enable transfer lock",
 		},
 		"auth_code": {
 			Type:      types.StringType,
@@ -48,6 +51,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
+			Description: "Auth code of the domain (for transfers)",
 		},
 		"status": {
 			Type: types.ListType{
@@ -57,12 +61,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
-		},
-		"extra_attributes": {
-			Type: types.MapType{
-				ElemType: types.StringType,
-			},
-			Optional: true,
+			Description: "Various status flags of the domain",
 		},
 		"owner_contacts": {
 			Type: types.ListType{
@@ -72,6 +71,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Validators: []tfsdk.AttributeValidator{
 				listvalidator.SizeBetween(1, 1),
 			},
+			Description: "Owner contact (list must have exactly 1 entry)",
 		},
 		"admin_contacts": {
 			Type: types.ListType{
@@ -81,6 +81,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Validators: []tfsdk.AttributeValidator{
 				listvalidator.SizeBetween(1, MAX_CONTACTS),
 			},
+			Description: fmt.Sprintf("Admin contacts (ADMIN-C) (list must have between 1 and %d entries)", MAX_CONTACTS),
 		},
 		"tech_contacts": {
 			Type: types.ListType{
@@ -90,6 +91,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Validators: []tfsdk.AttributeValidator{
 				listvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
+			Description: fmt.Sprintf("Tech contacts (TECH-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
 		"billing_contacts": {
 			Type: types.ListType{
@@ -99,6 +101,14 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Validators: []tfsdk.AttributeValidator{
 				listvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
+			Description: fmt.Sprintf("Billing contacts (BILLING-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
+		},
+		"extra_attributes": {
+			Type: types.MapType{
+				ElemType: types.StringType,
+			},
+			Optional:    true,
+			Description: "Map of X- attributes, the X- is prefixed automatically (see: https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)",
 		},
 	}
 

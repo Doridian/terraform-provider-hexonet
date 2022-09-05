@@ -19,7 +19,8 @@ type resourceContact struct {
 
 func (r resourceContactType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: makeContactSchema(false),
+		Attributes:  makeContactSchema(false),
+		Description: "Contact object, used for domain owner/admin/...",
 	}, nil
 }
 

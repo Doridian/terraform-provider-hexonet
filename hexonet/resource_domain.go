@@ -19,7 +19,8 @@ type resourceDomain struct {
 
 func (r resourceDomainType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: makeDomainSchema(false),
+		Attributes:  makeDomainSchema(false),
+		Description: "Domain object, can be used to configure most attributes of domains (careful, this can send DeleteDomain calls and actually unregister domains, use a role without that permission if you don't want that!)",
 	}, nil
 }
 
