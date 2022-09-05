@@ -49,9 +49,9 @@ type NameServer struct {
 	IpAddresses *utils.ValidatedList `tfsdk:"ip_addresses"`
 }
 
-func makeNameServerCommand(cl *apiclient.APIClient, cmd utils.CommandType, ns NameServer, oldNs NameServer, diag diag.Diagnostics) *response.Response {
+func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, ns NameServer, oldNs NameServer, diags *diag.Diagnostics) *response.Response {
 	if ns.Host.Null || ns.Host.Unknown {
-		diag.AddError("Main ID attribute unknwon or null", "host is null or unknown")
+		diags.AddError("Main ID attribute unknwon or null", "host is null or unknown")
 		return nil
 	}
 
@@ -61,21 +61,26 @@ func makeNameServerCommand(cl *apiclient.APIClient, cmd utils.CommandType, ns Na
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
-		utils.FillRequestArray(ns.IpAddresses.List, oldNs.IpAddresses.List, "IPADDRESS", req, diag)
+		utils.FillRequestArray(ctx, ns.IpAddresses.List, oldNs.IpAddresses.List, "IPADDRESS", req, diags)
+
+	}
+
+	if diags.HasError() {
+		return nil
 	}
 
 	resp := cl.Request(req)
-	utils.HandlePossibleErrorResponse(resp, diag)
+	utils.HandlePossibleErrorResponse(resp, diags)
 	return resp
 }
 
-func stringListToIPAddrAttrList(elems []string, diag diag.Diagnostics) *utils.ValidatedList {
+func stringListToIPAddrAttrList(elems []string, diags *diag.Diagnostics) *utils.ValidatedList {
 	res := utils.ValidatedListType(ipAddressType).NewList()
 
 	for _, elem := range elems {
 		ip, err := ipAddressType.IPFromString(elem)
 		if err != nil {
-			diag.AddError(
+			diags.AddError(
 				"IP Address Read Validation Error",
 				err.Error(),
 			)
@@ -87,15 +92,15 @@ func stringListToIPAddrAttrList(elems []string, diag diag.Diagnostics) *utils.Va
 	return res
 }
 
-func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, diag diag.Diagnostics) NameServer {
-	resp := makeNameServerCommand(cl, utils.CommandRead, ns, ns, diag)
-	if diag.HasError() {
+func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, diags *diag.Diagnostics) NameServer {
+	resp := makeNameServerCommand(ctx, cl, utils.CommandRead, ns, ns, diags)
+	if diags.HasError() {
 		return ns
 	}
 
 	return NameServer{
 		Host: types.String{Value: utils.ColumnFirstOrDefault(resp, "HOST", "").(string)},
 
-		IpAddresses: stringListToIPAddrAttrList(resp.GetColumn("IPADDRESS").GetData(), diag),
+		IpAddresses: stringListToIPAddrAttrList(resp.GetColumn("IPADDRESS").GetData(), diags),
 	}
 }

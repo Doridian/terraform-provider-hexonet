@@ -163,7 +163,7 @@ type Contact struct {
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
 }
 
-func makeContactCommand(cl *apiclient.APIClient, cmd utils.CommandType, contact Contact, oldContact Contact, diag diag.Diagnostics) *response.Response {
+func makeContactCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, contact Contact, oldContact Contact, diags *diag.Diagnostics) *response.Response {
 	req := map[string]interface{}{
 		"COMMAND": fmt.Sprintf("%sContact", cmd),
 	}
@@ -172,12 +172,12 @@ func makeContactCommand(cl *apiclient.APIClient, cmd utils.CommandType, contact 
 		req["NEW"] = "1"
 	} else {
 		if contact.ID.Null || contact.ID.Unknown {
-			diag.AddError("Main ID attribute unknwon or null", "id is null or unknown")
+			diags.AddError("Main ID attribute unknwon or null", "id is null or unknown")
 			return nil
 		}
 
 		if !oldContact.ID.Null && !oldContact.ID.Unknown && oldContact.ID.Value != contact.ID.Value {
-			diag.AddError("Main ID attribute changed", fmt.Sprintf("id changed from %s to %s", oldContact.ID.Value, contact.ID.Value))
+			diags.AddError("Main ID attribute changed", fmt.Sprintf("id changed from %s to %s", oldContact.ID.Value, contact.ID.Value))
 			return nil
 		}
 
@@ -206,7 +206,7 @@ func makeContactCommand(cl *apiclient.APIClient, cmd utils.CommandType, contact 
 		req["EMAIL"] = utils.AutoUnboxString(contact.Email, "")
 
 		if contact.Disclose.Unknown {
-			utils.HandleUnexpectedUnknown(diag)
+			utils.HandleUnexpectedUnknown(diags)
 			return nil
 		}
 
@@ -232,12 +232,16 @@ func makeContactCommand(cl *apiclient.APIClient, cmd utils.CommandType, contact 
 		utils.HandleExtraAttributesWrite(contact.ExtraAttributes, oldContact.ExtraAttributes, req)
 	}
 
+	if diags.HasError() {
+		return nil
+	}
+
 	return cl.Request(req)
 }
 
-func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClient, diag diag.Diagnostics) Contact {
-	resp := makeContactCommand(cl, utils.CommandRead, contact, contact, diag)
-	if diag.HasError() {
+func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClient, diags *diag.Diagnostics) Contact {
+	resp := makeContactCommand(ctx, cl, utils.CommandRead, contact, contact, diags)
+	if diags.HasError() {
 		return Contact{}
 	}
 

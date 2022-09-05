@@ -5,17 +5,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func StringListToAttrList(elems []string) types.List {
-	res := types.List{
-		ElemType: types.StringType,
-		Elems:    make([]attr.Value, 0, len(elems)),
-	}
+func StringListToAttrList(elems []string) []attr.Value {
+	return StringListToAttrListWithIgnore(elems, map[string]bool{})
+}
+
+func StringListToAttrListWithIgnore(elems []string, ignore map[string]bool) []attr.Value {
+	out := make([]attr.Value, 0)
 
 	for _, elem := range elems {
-		res.Elems = append(res.Elems, types.String{Value: elem})
+		if ignore[elem] {
+			continue
+		}
+		out = append(out, types.String{Value: elem})
 	}
 
-	return res
+	return out
 }
 
 func AutoBoxString(str interface{}) types.String {

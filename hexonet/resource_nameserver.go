@@ -43,12 +43,12 @@ func (r resourceNameServer) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	_ = makeNameServerCommand(r.p.client, utils.CommandCreate, data, NameServer{}, resp.Diagnostics)
+	_ = makeNameServerCommand(ctx, r.p.client, utils.CommandCreate, data, NameServer{}, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindNameserverRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -68,7 +68,7 @@ func (r resourceNameServer) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindNameserverRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -95,12 +95,12 @@ func (r resourceNameServer) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	_ = makeNameServerCommand(r.p.client, utils.CommandUpdate, data, dataOld, resp.Diagnostics)
+	_ = makeNameServerCommand(ctx, r.p.client, utils.CommandUpdate, data, dataOld, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindNameserverRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -120,9 +120,9 @@ func (r resourceNameServer) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	_ = makeNameServerCommand(r.p.client, utils.CommandDelete, NameServer{
+	_ = makeNameServerCommand(ctx, r.p.client, utils.CommandDelete, NameServer{
 		Host: dataOld.Host,
-	}, dataOld, resp.Diagnostics)
+	}, dataOld, &resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
 		return

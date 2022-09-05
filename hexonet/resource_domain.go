@@ -43,12 +43,12 @@ func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(r.p.client, utils.CommandCreate, data, Domain{}, resp.Diagnostics)
+	_ = makeDomainCommand(ctx, r.p.client, utils.CommandCreate, data, Domain{}, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data = kindDomainRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindDomainRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -68,7 +68,7 @@ func (r resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	data = kindDomainRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindDomainRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -95,12 +95,12 @@ func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(r.p.client, utils.CommandUpdate, data, dataOld, resp.Diagnostics)
+	_ = makeDomainCommand(ctx, r.p.client, utils.CommandUpdate, data, dataOld, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data = kindDomainRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindDomainRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -120,9 +120,9 @@ func (r resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	_ = makeDomainCommand(r.p.client, utils.CommandDelete, Domain{
+	_ = makeDomainCommand(ctx, r.p.client, utils.CommandDelete, Domain{
 		Domain: dataOld.Domain,
-	}, dataOld, resp.Diagnostics)
+	}, dataOld, &resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
 		return

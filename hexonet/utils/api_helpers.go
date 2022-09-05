@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -48,38 +49,55 @@ func ColumnFirstOrDefault(resp *response.Response, colName string, def interface
 }
 
 // Functions to handle deletion of "list"/"array" type API fields
-func FillRequestArray(list types.List, oldList types.List, prefix string, req map[string]interface{}, diag diag.Diagnostics) {
-	if list.Unknown || oldList.Unknown {
-		HandleUnexpectedUnknown(diag)
+type elementsAsCapableValue interface {
+	attr.Value
+	ElementsAs(ctx context.Context, target interface{}, allowUnhandled bool) diag.Diagnostics
+}
+
+func FillRequestArray(ctx context.Context, list elementsAsCapableValue, oldList elementsAsCapableValue, prefix string, req map[string]interface{}, diags *diag.Diagnostics) {
+	FillRequestArrayWithIgnore(ctx, list, oldList, prefix, req, diags, map[string]bool{})
+}
+
+func FillRequestArrayWithIgnore(ctx context.Context, listObj elementsAsCapableValue, oldListObj elementsAsCapableValue, prefix string, req map[string]interface{}, diags *diag.Diagnostics, ignore map[string]bool) {
+	if listObj.IsUnknown() || oldListObj.IsUnknown() {
+		HandleUnexpectedUnknown(diags)
 		return
 	}
 
-	listIdx := 0
-
-	if !list.Null {
-		for _, item := range list.Elems {
-			if item.IsUnknown() {
-				HandleUnexpectedUnknown(diag)
-				return
-			}
-			req[fmt.Sprintf("%s%d", prefix, listIdx)] = item.(types.String).Value
-			listIdx++
-		}
+	list := make([]string, 0)
+	if !listObj.IsNull() {
+		diags.Append(listObj.ElementsAs(ctx, &list, false)...)
+	}
+	oldList := make([]string, 0)
+	if !oldListObj.IsNull() {
+		diags.Append(oldListObj.ElementsAs(ctx, &oldList, false)...)
 	}
 
-	if oldList.Null {
+	if diags.HasError() {
 		return
 	}
 
 	i := 0
-	for listIdx < len(oldList.Elems) {
-		oldItem := oldList.Elems[listIdx]
-		if oldItem.IsUnknown() {
-			HandleUnexpectedUnknown(diag)
-			return
+	foundItems := make(map[string]bool)
+	for _, val := range list {
+		foundItems[val] = true
+		if ignore[val] {
+			continue
 		}
-		req[fmt.Sprintf("DEL%s%d", prefix, i)] = oldItem.(types.String).Value
-		listIdx++
+		req[fmt.Sprintf("%s%d", prefix, i)] = val
+		i++
+	}
+
+	for ; i < len(oldList); i++ {
+		req[fmt.Sprintf("%s%d", prefix, i)] = ""
+	}
+
+	i = 0
+	for _, oldVal := range oldList {
+		if ignore[oldVal] || foundItems[oldVal] {
+			continue
+		}
+		req[fmt.Sprintf("DEL%s%d", prefix, i)] = oldVal
 		i++
 	}
 }

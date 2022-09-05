@@ -42,7 +42,7 @@ func (d dataSourceNameServer) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	data = kindNameserverRead(ctx, data, d.p.client, resp.Diagnostics)
+	data = kindNameserverRead(ctx, data, d.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

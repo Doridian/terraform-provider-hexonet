@@ -42,7 +42,7 @@ func (d dataSourceDomain) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	data = kindDomainRead(ctx, data, d.p.client, resp.Diagnostics)
+	data = kindDomainRead(ctx, data, d.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

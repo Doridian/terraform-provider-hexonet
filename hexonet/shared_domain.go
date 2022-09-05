@@ -6,6 +6,7 @@ import (
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -30,7 +31,7 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Description: "Domain name (example: example.com)",
 		},
 		"name_servers": {
-			Type: types.ListType{
+			Type: types.ListType{ // This is a list because it is ordered and order can be user-configured
 				ElemType: types.StringType,
 			},
 			Required: true,
@@ -54,52 +55,49 @@ func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Description: "Auth code of the domain (for transfers)",
 		},
 		"status": {
-			Type: types.ListType{
+			Type: types.SetType{
 				ElemType: types.StringType,
 			},
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-			Description: "Various status flags of the domain",
+			Required:    true,
+			Description: "Various status flags of the domain (clientTransferProhibited, ...)",
 		},
 		"owner_contacts": {
-			Type: types.ListType{
+			Type: types.SetType{
 				ElemType: types.StringType,
 			},
 			Required: true,
 			Validators: []tfsdk.AttributeValidator{
-				listvalidator.SizeBetween(1, 1),
+				setvalidator.SizeBetween(1, 1),
 			},
 			Description: "Owner contact (list must have exactly 1 entry)",
 		},
 		"admin_contacts": {
-			Type: types.ListType{
+			Type: types.SetType{
 				ElemType: types.StringType,
 			},
 			Required: true,
 			Validators: []tfsdk.AttributeValidator{
-				listvalidator.SizeBetween(1, MAX_CONTACTS),
+				setvalidator.SizeBetween(1, MAX_CONTACTS),
 			},
 			Description: fmt.Sprintf("Admin contacts (ADMIN-C) (list must have between 1 and %d entries)", MAX_CONTACTS),
 		},
 		"tech_contacts": {
-			Type: types.ListType{
+			Type: types.SetType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
 			Validators: []tfsdk.AttributeValidator{
-				listvalidator.SizeBetween(0, MAX_CONTACTS),
+				setvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
 			Description: fmt.Sprintf("Tech contacts (TECH-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
 		"billing_contacts": {
-			Type: types.ListType{
+			Type: types.SetType{
 				ElemType: types.StringType,
 			},
 			Optional: true,
 			Validators: []tfsdk.AttributeValidator{
-				listvalidator.SizeBetween(0, MAX_CONTACTS),
+				setvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
 			Description: fmt.Sprintf("Billing contacts (BILLING-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
@@ -124,21 +122,21 @@ type Domain struct {
 
 	NameServers types.List `tfsdk:"name_servers"`
 
-	OwnerContacts   types.List `tfsdk:"owner_contacts"`
-	AdminContacts   types.List `tfsdk:"admin_contacts"`
-	TechContacts    types.List `tfsdk:"tech_contacts"`
-	BillingContacts types.List `tfsdk:"billing_contacts"`
+	OwnerContacts   types.Set `tfsdk:"owner_contacts"`
+	AdminContacts   types.Set `tfsdk:"admin_contacts"`
+	TechContacts    types.Set `tfsdk:"tech_contacts"`
+	BillingContacts types.Set `tfsdk:"billing_contacts"`
 
 	TransferLock types.Bool   `tfsdk:"transfer_lock"`
-	Status       types.List   `tfsdk:"status"`
+	Status       types.Set    `tfsdk:"status"`
 	AuthCode     types.String `tfsdk:"auth_code"`
 
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
 }
 
-func makeDomainCommand(cl *apiclient.APIClient, cmd utils.CommandType, domain Domain, oldDomain Domain, diag diag.Diagnostics) *response.Response {
+func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, domain Domain, oldDomain Domain, diags *diag.Diagnostics) *response.Response {
 	if domain.Domain.Null || domain.Domain.Unknown {
-		diag.AddError("Main ID attribute unknwon or null", "domain is null or unknown")
+		diags.AddError("Main ID attribute unknwon or null", "domain is null or unknown")
 		return nil
 	}
 
@@ -148,46 +146,69 @@ func makeDomainCommand(cl *apiclient.APIClient, cmd utils.CommandType, domain Do
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
-		utils.FillRequestArray(domain.NameServers, oldDomain.NameServers, "NAMESERVER", req, diag)
+		utils.FillRequestArray(ctx, domain.Status, oldDomain.Status, "STATUS", req, diags)
 
-		utils.FillRequestArray(domain.OwnerContacts, oldDomain.OwnerContacts, "OWNERCONTACT", req, diag)
-		utils.FillRequestArray(domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req, diag)
-		utils.FillRequestArray(domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req, diag)
-		utils.FillRequestArray(domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req, diag)
+		utils.FillRequestArray(ctx, domain.NameServers, oldDomain.NameServers, "NAMESERVER", req, diags)
+
+		utils.FillRequestArray(ctx, domain.OwnerContacts, oldDomain.OwnerContacts, "OWNERCONTACT", req, diags)
+		utils.FillRequestArray(ctx, domain.AdminContacts, oldDomain.AdminContacts, "ADMINCONTACT", req, diags)
+		utils.FillRequestArray(ctx, domain.TechContacts, oldDomain.TechContacts, "TECHCONTACT", req, diags)
+		utils.FillRequestArray(ctx, domain.BillingContacts, oldDomain.BillingContacts, "BILLINGCONTACT", req, diags)
 
 		if domain.TransferLock.Unknown {
-			utils.HandleUnexpectedUnknown(diag)
-			return nil
+			utils.HandleUnexpectedUnknown(diags)
 		}
 		req["TRANSFERLOCK"] = utils.BoolToNumberStr(domain.TransferLock.Value)
 
 		utils.HandleExtraAttributesWrite(domain.ExtraAttributes, oldDomain.ExtraAttributes, req)
 	}
 
+	if diags.HasError() {
+		return nil
+	}
+
 	resp := cl.Request(req)
-	utils.HandlePossibleErrorResponse(resp, diag)
+	utils.HandlePossibleErrorResponse(resp, diags)
 	return resp
 }
 
-func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient, diag diag.Diagnostics) Domain {
-	resp := makeDomainCommand(cl, utils.CommandRead, domain, domain, diag)
-	if diag.HasError() {
+func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient, diags *diag.Diagnostics) Domain {
+	resp := makeDomainCommand(ctx, cl, utils.CommandRead, domain, domain, diags)
+	if diags.HasError() {
 		return Domain{}
 	}
 
 	return Domain{
 		Domain: types.String{Value: utils.ColumnFirstOrDefault(resp, "ID", "").(string)},
 
-		NameServers: utils.StringListToAttrList(utils.ColumnOrDefault(resp, "NAMESERVER", []string{})),
+		NameServers: types.List{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "NAMESERVER", []string{})),
+		},
 
 		TransferLock: utils.AutoBoxBoolNumberStr(utils.ColumnFirstOrDefault(resp, "TRANSFERLOCK", nil)),
-		Status:       utils.StringListToAttrList(utils.ColumnOrDefault(resp, "STATUS", []string{})),
-		AuthCode:     types.String{Value: utils.ColumnFirstOrDefault(resp, "AUTH", "").(string)},
+		Status: types.Set{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "STATUS", []string{})),
+		},
+		AuthCode: types.String{Value: utils.ColumnFirstOrDefault(resp, "AUTH", "").(string)},
 
-		OwnerContacts:   utils.StringListToAttrList(utils.ColumnOrDefault(resp, "OWNERCONTACT", []string{})),
-		AdminContacts:   utils.StringListToAttrList(utils.ColumnOrDefault(resp, "ADMINCONTACT", []string{})),
-		TechContacts:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "TECHCONTACT", []string{})),
-		BillingContacts: utils.StringListToAttrList(utils.ColumnOrDefault(resp, "BILLINGCONTACT", []string{})),
+		OwnerContacts: types.Set{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "OWNERCONTACT", []string{})),
+		},
+		AdminContacts: types.Set{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "ADMINCONTACT", []string{})),
+		},
+		TechContacts: types.Set{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "TECHCONTACT", []string{})),
+		},
+		BillingContacts: types.Set{
+			ElemType: types.StringType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "BILLINGCONTACT", []string{})),
+		},
 
 		ExtraAttributes: utils.HandleExtraAttributesRead(resp),
 	}

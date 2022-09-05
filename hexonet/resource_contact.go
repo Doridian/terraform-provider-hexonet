@@ -43,12 +43,12 @@ func (r resourceContact) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	_ = makeContactCommand(r.p.client, utils.CommandCreate, data, Contact{}, resp.Diagnostics)
+	_ = makeContactCommand(ctx, r.p.client, utils.CommandCreate, data, Contact{}, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data = kindContactRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindContactRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -68,7 +68,7 @@ func (r resourceContact) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	data = kindContactRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindContactRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -95,12 +95,12 @@ func (r resourceContact) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	_ = makeContactCommand(r.p.client, utils.CommandUpdate, data, dataOld, resp.Diagnostics)
+	_ = makeContactCommand(ctx, r.p.client, utils.CommandUpdate, data, dataOld, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	data = kindContactRead(ctx, data, r.p.client, resp.Diagnostics)
+	data = kindContactRead(ctx, data, r.p.client, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -120,9 +120,9 @@ func (r resourceContact) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	_ = makeContactCommand(r.p.client, utils.CommandDelete, Contact{
+	_ = makeContactCommand(ctx, r.p.client, utils.CommandDelete, Contact{
 		ID: dataOld.ID,
-	}, dataOld, resp.Diagnostics)
+	}, dataOld, &resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
 		return

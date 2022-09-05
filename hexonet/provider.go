@@ -170,7 +170,7 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		res = c.Login(mfaToken)
 	}
 
-	utils.HandlePossibleErrorResponse(res, resp.Diagnostics)
+	utils.HandlePossibleErrorResponse(res, &resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
 		return
