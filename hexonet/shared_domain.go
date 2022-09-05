@@ -222,6 +222,8 @@ func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.C
 			req["SECDNS-MAXSIGLIFE"] = "0"
 		}
 
+		req["INTERNALDNS"] = "0" // Never create any resource we did not explicitly request
+
 		utils.HandleExtraAttributesWrite(domain.ExtraAttributes, oldDomain.ExtraAttributes, req)
 	}
 
