@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
-	github.com/hashicorp/terraform-plugin-framework v0.12.1-0.20220915131457-5f9d3d3d9e0c
+	github.com/hashicorp/terraform-plugin-framework v0.13.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.5.0
 	github.com/hashicorp/terraform-plugin-go v0.14.0
 	github.com/hexonet/go-sdk/v3 v3.5.4
