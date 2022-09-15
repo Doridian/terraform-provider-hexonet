@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -28,10 +29,10 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Description: "Hostname of the nameserver (example: ns1.example.com)",
 		},
 		"ip_addresses": {
-			Type:       types.ListType{ElemType: ipAddressType},
-			Required:   true,
+			Type:     types.ListType{ElemType: ipAddressType},
+			Required: true,
 			Validators: []tfsdk.AttributeValidator{
-				//listvalidator.SizeBetween(1, MAX_IPADDRESS),
+				listvalidator.SizeBetween(1, MAX_IPADDRESS),
 			},
 			Description: fmt.Sprintf("IP addresses of the nameserver (list must have between 1 and %d entries)", MAX_IPADDRESS),
 		},
