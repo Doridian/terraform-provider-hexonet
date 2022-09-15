@@ -6,27 +6,28 @@ import (
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-type resourceDomainType struct{}
-
 type resourceDomain struct {
-	p localProvider
+	p *localProvider
 }
 
-func (r resourceDomainType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func newResourceDomain(p *localProvider) resource.Resource {
+	return &resourceDomain{
+		p: p,
+	}
+}
+
+func (r resourceDomain) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "hexonet_domain"
+}
+
+func (r resourceDomain) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeDomainSchema(false),
 		Description: "Domain object, can be used to configure most attributes of domains",
-	}, nil
-}
-
-func (r resourceDomainType) NewResource(_ context.Context, p provider.Provider) (resource.Resource, diag.Diagnostics) {
-	return resourceDomain{
-		p: *(p.(*localProvider)),
 	}, nil
 }
 

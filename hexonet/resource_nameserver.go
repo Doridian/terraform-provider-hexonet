@@ -6,27 +6,28 @@ import (
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-type resourceNameServerType struct{}
-
 type resourceNameServer struct {
-	p localProvider
+	p *localProvider
 }
 
-func (r resourceNameServerType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func newResourceNameServer(p *localProvider) resource.Resource {
+	return &resourceNameServer{
+		p: p,
+	}
+}
+
+func (r resourceNameServer) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "hexonet_nameserver"
+}
+
+func (r resourceNameServer) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeNameServerSchema(false),
 		Description: "Nameserver object, used to register so-called \"glue\" records when a domain's nameservers use hosts on the same domain (example: example.com using ns1.example.com)",
-	}, nil
-}
-
-func (r resourceNameServerType) NewResource(_ context.Context, p provider.Provider) (resource.Resource, diag.Diagnostics) {
-	return resourceNameServer{
-		p: *(p.(*localProvider)),
 	}, nil
 }
 

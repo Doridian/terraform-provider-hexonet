@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
@@ -88,20 +90,32 @@ type localProviderData struct {
 	AllowDomainCreateDelete types.Bool   `tfsdk:"allow_domain_create_delete"`
 }
 
-func (p *localProvider) GetResources(_ context.Context) (map[string]provider.ResourceType, diag.Diagnostics) {
-	return map[string]provider.ResourceType{
-		"hexonet_domain":     resourceDomainType{},
-		"hexonet_nameserver": resourceNameServerType{},
-		"hexonet_contact":    resourceContactType{},
-	}, nil
+func (p *localProvider) makeResourceCreator(ctor func(*localProvider) resource.Resource) func() resource.Resource {
+	return func() resource.Resource {
+		return ctor(p)
+	}
 }
 
-func (p *localProvider) GetDataSources(_ context.Context) (map[string]provider.DataSourceType, diag.Diagnostics) {
-	return map[string]provider.DataSourceType{
-		"hexonet_domain":     dataSourceDomainType{},
-		"hexonet_nameserver": dataSourceNameServerType{},
-		"hexonet_contact":    dataSourceContactType{},
-	}, nil
+func (p *localProvider) makeDataSourceCreator(ctor func(*localProvider) datasource.DataSource) func() datasource.DataSource {
+	return func() datasource.DataSource {
+		return ctor(p)
+	}
+}
+
+func (p *localProvider) Resources(_ context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		p.makeResourceCreator(newResourceContact),
+		p.makeResourceCreator(newResourceDomain),
+		p.makeResourceCreator(newResourceNameServer),
+	}
+}
+
+func (p *localProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		p.makeDataSourceCreator(newDataSourceContact),
+		p.makeDataSourceCreator(newDataSourceDomain),
+		p.makeDataSourceCreator(newDataSourceNameServer),
+	}
 }
 
 func getValueOrDefaultToEnv(val types.String, key string, resp *provider.ConfigureResponse, allowEmpty bool) string {

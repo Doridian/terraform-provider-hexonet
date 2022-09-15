@@ -6,27 +6,28 @@ import (
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
-type dataSourceContactType struct{}
-
 type dataSourceContact struct {
-	p localProvider
+	p *localProvider
 }
 
-func (d dataSourceContactType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func newDataSourceContact(p *localProvider) datasource.DataSource {
+	return &dataSourceContact{
+		p: p,
+	}
+}
+
+func (d dataSourceContact) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeContactSchema(true),
 		Description: "Contact object, used for domain owner/admin/...",
 	}, nil
 }
 
-func (d dataSourceContactType) NewDataSource(_ context.Context, p provider.Provider) (datasource.DataSource, diag.Diagnostics) {
-	return dataSourceContact{
-		p: *(p.(*localProvider)),
-	}, nil
+func (d dataSourceContact) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = "hexonet_contact"
 }
 
 func (d dataSourceContact) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
