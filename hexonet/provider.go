@@ -130,6 +130,9 @@ func getValueOrDefaultToEnv(val types.String, key string, resp *provider.Configu
 }
 
 func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	resp.DataSourceData = p
+	resp.ResourceData = p
+
 	var config localProviderData
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -197,7 +200,4 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	p.client = c
 	p.configured = true
-
-	resp.DataSourceData = p
-	resp.ResourceData = p
 }
