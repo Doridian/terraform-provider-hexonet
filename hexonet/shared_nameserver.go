@@ -28,7 +28,7 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 			Description: "Hostname of the nameserver (example: ns1.example.com)",
 		},
 		"ip_addresses": {
-			Type:       utils.ValidatedListType(ipAddressType),
+			Type:       types.ListType{ElemType: ipAddressType},
 			Required:   true,
 			Validators: []tfsdk.AttributeValidator{
 				//listvalidator.SizeBetween(1, MAX_IPADDRESS),
@@ -45,8 +45,8 @@ func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
 }
 
 type NameServer struct {
-	Host        types.String         `tfsdk:"host"`
-	IpAddresses *utils.ValidatedList `tfsdk:"ip_addresses"`
+	Host        types.String `tfsdk:"host"`
+	IpAddresses types.List   `tfsdk:"ip_addresses"`
 }
 
 func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, ns NameServer, oldNs NameServer, diags *diag.Diagnostics) *response.Response {
@@ -61,7 +61,7 @@ func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd uti
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
-		utils.FillRequestArray(ctx, ns.IpAddresses.List, oldNs.IpAddresses.List, "IPADDRESS", req, diags)
+		utils.FillRequestArray(ctx, ns.IpAddresses, oldNs.IpAddresses, "IPADDRESS", req, diags)
 
 	}
 
@@ -74,24 +74,6 @@ func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd uti
 	return resp
 }
 
-func stringListToIPAddrAttrList(elems []string, diags *diag.Diagnostics) *utils.ValidatedList {
-	res := utils.ValidatedListType(ipAddressType).NewList()
-
-	for _, elem := range elems {
-		ip, err := ipAddressType.IPFromString(elem)
-		if err != nil {
-			diags.AddError(
-				"IP Address Read Validation Error",
-				err.Error(),
-			)
-			continue
-		}
-		res.Elems = append(res.Elems, ip)
-	}
-
-	return res
-}
-
 func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, diags *diag.Diagnostics) NameServer {
 	resp := makeNameServerCommand(ctx, cl, utils.CommandRead, ns, ns, diags)
 	if diags.HasError() {
@@ -101,6 +83,9 @@ func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APICli
 	return NameServer{
 		Host: types.String{Value: utils.ColumnFirstOrDefault(resp, "HOST", "").(string)},
 
-		IpAddresses: stringListToIPAddrAttrList(resp.GetColumn("IPADDRESS").GetData(), diags),
+		IpAddresses: types.List{
+			ElemType: ipAddressType,
+			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "IPADDRESS", []string{})),
+		},
 	}
 }
