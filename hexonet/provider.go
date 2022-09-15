@@ -21,6 +21,16 @@ func New() provider.Provider {
 	return &localProvider{}
 }
 
+type localProviderData struct {
+	Username                types.String `tfsdk:"username"`
+	Role                    types.String `tfsdk:"role"`
+	Password                types.String `tfsdk:"password"`
+	MfaToken                types.String `tfsdk:"mfa_token"`
+	Live                    types.Bool   `tfsdk:"live"`
+	HighPerformance         types.Bool   `tfsdk:"high_performance"`
+	AllowDomainCreateDelete types.Bool   `tfsdk:"allow_domain_create_delete"`
+}
+
 type localProvider struct {
 	allowDomainCreateDelete bool
 	configured              bool
@@ -80,41 +90,23 @@ func (p *localProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnos
 	}, nil
 }
 
-type localProviderData struct {
-	Username                types.String `tfsdk:"username"`
-	Role                    types.String `tfsdk:"role"`
-	Password                types.String `tfsdk:"password"`
-	MfaToken                types.String `tfsdk:"mfa_token"`
-	Live                    types.Bool   `tfsdk:"live"`
-	HighPerformance         types.Bool   `tfsdk:"high_performance"`
-	AllowDomainCreateDelete types.Bool   `tfsdk:"allow_domain_create_delete"`
-}
-
-func (p *localProvider) makeResourceCreator(ctor func(*localProvider) resource.Resource) func() resource.Resource {
-	return func() resource.Resource {
-		return ctor(p)
-	}
-}
-
-func (p *localProvider) makeDataSourceCreator(ctor func(*localProvider) datasource.DataSource) func() datasource.DataSource {
-	return func() datasource.DataSource {
-		return ctor(p)
-	}
+func (p *localProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "hexonet"
 }
 
 func (p *localProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		p.makeResourceCreator(newResourceContact),
-		p.makeResourceCreator(newResourceDomain),
-		p.makeResourceCreator(newResourceNameServer),
+		newResourceContact,
+		newResourceDomain,
+		newResourceNameServer,
 	}
 }
 
 func (p *localProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		p.makeDataSourceCreator(newDataSourceContact),
-		p.makeDataSourceCreator(newDataSourceDomain),
-		p.makeDataSourceCreator(newDataSourceNameServer),
+		newDataSourceContact,
+		newDataSourceDomain,
+		newDataSourceNameServer,
 	}
 }
 
@@ -205,4 +197,7 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	p.client = c
 	p.configured = true
+
+	resp.DataSourceData = p
+	resp.ResourceData = p
 }

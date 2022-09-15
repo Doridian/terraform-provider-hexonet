@@ -13,31 +13,33 @@ type dataSourceDomain struct {
 	p *localProvider
 }
 
-func newDataSourceDomain(p *localProvider) datasource.DataSource {
-	return &dataSourceDomain{
-		p: p,
-	}
+func newDataSourceDomain() datasource.DataSource {
+	return &dataSourceDomain{}
 }
 
-func (d dataSourceDomain) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (d *dataSourceDomain) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeDomainSchema(true),
 		Description: "Domain object",
 	}, nil
 }
 
-func (d dataSourceDomain) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = "hexonet_domain"
+func (d *dataSourceDomain) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	d.p = req.ProviderData.(*localProvider)
 }
 
-func (d dataSourceDomain) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *dataSourceDomain) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_domain"
+}
+
+func (d *dataSourceDomain) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	if !d.p.configured {
 		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
-	var data Domain
-	diags := req.Config.Get(ctx, &data)
+	data := &Domain{}
+	diags := req.Config.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

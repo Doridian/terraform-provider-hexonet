@@ -50,7 +50,7 @@ type NameServer struct {
 	IpAddresses types.List   `tfsdk:"ip_addresses"`
 }
 
-func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, ns NameServer, oldNs NameServer, diags *diag.Diagnostics) *response.Response {
+func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, ns *NameServer, oldNs *NameServer, diags *diag.Diagnostics) *response.Response {
 	if ns.Host.Null || ns.Host.Unknown {
 		diags.AddError("Main ID attribute unknwon or null", "host is null or unknown")
 		return nil
@@ -75,13 +75,13 @@ func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd uti
 	return resp
 }
 
-func kindNameserverRead(ctx context.Context, ns NameServer, cl *apiclient.APIClient, diags *diag.Diagnostics) NameServer {
+func kindNameserverRead(ctx context.Context, ns *NameServer, cl *apiclient.APIClient, diags *diag.Diagnostics) *NameServer {
 	resp := makeNameServerCommand(ctx, cl, utils.CommandRead, ns, ns, diags)
 	if diags.HasError() {
-		return ns
+		return &NameServer{}
 	}
 
-	return NameServer{
+	return &NameServer{
 		Host: types.String{Value: utils.ColumnFirstOrDefault(resp, "HOST", "").(string)},
 
 		IpAddresses: types.List{

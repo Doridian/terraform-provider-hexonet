@@ -13,31 +13,33 @@ type dataSourceNameServer struct {
 	p *localProvider
 }
 
-func newDataSourceNameServer(p *localProvider) datasource.DataSource {
-	return &dataSourceNameServer{
-		p: p,
-	}
+func newDataSourceNameServer() datasource.DataSource {
+	return &dataSourceNameServer{}
 }
 
-func (d dataSourceNameServer) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (d *dataSourceNameServer) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeNameServerSchema(true),
 		Description: "Nameserver object, used to register so-called \"glue\" records when a domain's nameservers use hosts on the same domain (example: example.com using ns1.example.com)",
 	}, nil
 }
 
-func (d dataSourceNameServer) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = "hexonet_nameserver"
+func (d *dataSourceNameServer) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	d.p = req.ProviderData.(*localProvider)
 }
 
-func (d dataSourceNameServer) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *dataSourceNameServer) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_nameserver"
+}
+
+func (d *dataSourceNameServer) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	if !d.p.configured {
 		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
-	var data NameServer
-	diags := req.Config.Get(ctx, &data)
+	data := &NameServer{}
+	diags := req.Config.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -14,38 +14,40 @@ type resourceDomain struct {
 	p *localProvider
 }
 
-func newResourceDomain(p *localProvider) resource.Resource {
-	return &resourceDomain{
-		p: p,
-	}
+func newResourceDomain() resource.Resource {
+	return &resourceDomain{}
 }
 
-func (r resourceDomain) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "hexonet_domain"
-}
-
-func (r resourceDomain) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (r *resourceDomain) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeDomainSchema(false),
 		Description: "Domain object, can be used to configure most attributes of domains",
 	}, nil
 }
 
-func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *resourceDomain) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	r.p = req.ProviderData.(*localProvider)
+}
+
+func (r *resourceDomain) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_domain"
+}
+
+func (r *resourceDomain) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	if !r.p.configured {
 		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
-	var data Domain
-	diags := req.Plan.Get(ctx, &data)
+	data := &Domain{}
+	diags := req.Plan.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	if r.p.allowDomainCreateDelete {
-		_ = makeDomainCommand(ctx, r.p.client, utils.CommandCreate, data, Domain{}, &resp.Diagnostics)
+		_ = makeDomainCommand(ctx, r.p.client, utils.CommandCreate, data, &Domain{}, &resp.Diagnostics)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -58,14 +60,14 @@ func (r resourceDomain) Create(ctx context.Context, req resource.CreateRequest, 
 	resp.State.Set(ctx, data)
 }
 
-func (r resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	if !r.p.configured {
 		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
-	var data Domain
-	diags := req.State.Get(ctx, &data)
+	data := &Domain{}
+	diags := req.State.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -78,21 +80,21 @@ func (r resourceDomain) Read(ctx context.Context, req resource.ReadRequest, resp
 	resp.State.Set(ctx, data)
 }
 
-func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	if !r.p.configured {
 		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
-	var data Domain
-	diags := req.Plan.Get(ctx, &data)
+	data := &Domain{}
+	diags := req.Plan.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var dataOld Domain
-	diags = req.State.Get(ctx, &dataOld)
+	dataOld := &Domain{}
+	diags = req.State.Get(ctx, dataOld)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -110,21 +112,21 @@ func (r resourceDomain) Update(ctx context.Context, req resource.UpdateRequest, 
 	resp.State.Set(ctx, data)
 }
 
-func (r resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	if !r.p.configured {
 		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
-	var dataOld Domain
-	diags := req.State.Get(ctx, &dataOld)
+	dataOld := &Domain{}
+	diags := req.State.Get(ctx, dataOld)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	if r.p.allowDomainCreateDelete {
-		_ = makeDomainCommand(ctx, r.p.client, utils.CommandDelete, Domain{
+		_ = makeDomainCommand(ctx, r.p.client, utils.CommandDelete, &Domain{
 			Domain: dataOld.Domain,
 		}, dataOld, &resp.Diagnostics)
 
@@ -136,6 +138,6 @@ func (r resourceDomain) Delete(ctx context.Context, req resource.DeleteRequest, 
 	resp.State.RemoveResource(ctx)
 }
 
-func (r resourceDomain) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *resourceDomain) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("domain"), req, resp)
 }

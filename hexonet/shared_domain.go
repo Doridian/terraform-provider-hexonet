@@ -192,7 +192,7 @@ type Domain struct {
 	DNSSECMaxSigLifespan types.Int64 `tfsdk:"dnssec_max_sig_lifespan"`
 }
 
-func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, domain Domain, oldDomain Domain, diags *diag.Diagnostics) *response.Response {
+func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, domain *Domain, oldDomain *Domain, diags *diag.Diagnostics) *response.Response {
 	if domain.Domain.Null || domain.Domain.Unknown {
 		diags.AddError("Main ID attribute unknwon or null", "domain is null or unknown")
 		return nil
@@ -236,10 +236,10 @@ func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.C
 	return resp
 }
 
-func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient, diags *diag.Diagnostics) Domain {
+func kindDomainRead(ctx context.Context, domain *Domain, cl *apiclient.APIClient, diags *diag.Diagnostics) *Domain {
 	resp := makeDomainCommand(ctx, cl, utils.CommandRead, domain, domain, diags)
 	if diags.HasError() {
-		return Domain{}
+		return &Domain{}
 	}
 
 	var maxSigLife types.Int64
@@ -253,12 +253,12 @@ func kindDomainRead(ctx context.Context, domain Domain, cl *apiclient.APIClient,
 				"Error reading SECDNS-MAXSIGLIFE",
 				err.Error(),
 			)
-			return Domain{}
+			return &Domain{}
 		}
 		maxSigLife = types.Int64{Value: int64(i)}
 	}
 
-	return Domain{
+	return &Domain{
 		Domain: types.String{Value: utils.ColumnFirstOrDefault(resp, "ID", "").(string)},
 
 		NameServers: types.List{

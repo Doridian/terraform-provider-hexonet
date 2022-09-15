@@ -167,7 +167,7 @@ type Contact struct {
 	ExtraAttributes types.Map `tfsdk:"extra_attributes"`
 }
 
-func makeContactCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, contact Contact, oldContact Contact, diags *diag.Diagnostics) *response.Response {
+func makeContactCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, contact *Contact, oldContact *Contact, diags *diag.Diagnostics) *response.Response {
 	req := map[string]interface{}{
 		"COMMAND": fmt.Sprintf("%sContact", cmd),
 	}
@@ -243,13 +243,13 @@ func makeContactCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.
 	return cl.Request(req)
 }
 
-func kindContactRead(ctx context.Context, contact Contact, cl *apiclient.APIClient, diags *diag.Diagnostics) Contact {
+func kindContactRead(ctx context.Context, contact *Contact, cl *apiclient.APIClient, diags *diag.Diagnostics) *Contact {
 	resp := makeContactCommand(ctx, cl, utils.CommandRead, contact, contact, diags)
 	if diags.HasError() {
-		return Contact{}
+		return &Contact{}
 	}
 
-	return Contact{
+	return &Contact{
 		ID: types.String{Value: utils.ColumnFirstOrDefault(resp, "ID", "").(string)},
 
 		Title:      utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "TITLE", nil)),

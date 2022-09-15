@@ -14,21 +14,23 @@ type resourceNameServer struct {
 	p *localProvider
 }
 
-func newResourceNameServer(p *localProvider) resource.Resource {
-	return &resourceNameServer{
-		p: p,
-	}
+func newResourceNameServer() resource.Resource {
+	return &resourceNameServer{}
 }
 
-func (r resourceNameServer) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "hexonet_nameserver"
-}
-
-func (r resourceNameServer) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (r *resourceNameServer) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeNameServerSchema(false),
 		Description: "Nameserver object, used to register so-called \"glue\" records when a domain's nameservers use hosts on the same domain (example: example.com using ns1.example.com)",
 	}, nil
+}
+
+func (r *resourceNameServer) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	r.p = req.ProviderData.(*localProvider)
+}
+
+func (r *resourceNameServer) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_nameserver"
 }
 
 func (r resourceNameServer) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -37,14 +39,14 @@ func (r resourceNameServer) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	var data NameServer
-	diags := req.Plan.Get(ctx, &data)
+	data := &NameServer{}
+	diags := req.Plan.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_ = makeNameServerCommand(ctx, r.p.client, utils.CommandCreate, data, NameServer{}, &resp.Diagnostics)
+	_ = makeNameServerCommand(ctx, r.p.client, utils.CommandCreate, data, &NameServer{}, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -62,8 +64,8 @@ func (r resourceNameServer) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	var data NameServer
-	diags := req.State.Get(ctx, &data)
+	data := &NameServer{}
+	diags := req.State.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -82,15 +84,15 @@ func (r resourceNameServer) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	var data NameServer
-	diags := req.Plan.Get(ctx, &data)
+	data := &NameServer{}
+	diags := req.Plan.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var dataOld NameServer
-	diags = req.State.Get(ctx, &dataOld)
+	dataOld := &NameServer{}
+	diags = req.State.Get(ctx, dataOld)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -114,14 +116,14 @@ func (r resourceNameServer) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	var dataOld NameServer
+	dataOld := &NameServer{}
 	diags := req.State.Get(ctx, &dataOld)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_ = makeNameServerCommand(ctx, r.p.client, utils.CommandDelete, NameServer{
+	_ = makeNameServerCommand(ctx, r.p.client, utils.CommandDelete, &NameServer{
 		Host: dataOld.Host,
 	}, dataOld, &resp.Diagnostics)
 

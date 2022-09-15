@@ -13,31 +13,33 @@ type dataSourceContact struct {
 	p *localProvider
 }
 
-func newDataSourceContact(p *localProvider) datasource.DataSource {
-	return &dataSourceContact{
-		p: p,
-	}
+func newDataSourceContact() datasource.DataSource {
+	return &dataSourceContact{}
 }
 
-func (d dataSourceContact) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (d *dataSourceContact) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes:  makeContactSchema(true),
 		Description: "Contact object, used for domain owner/admin/...",
 	}, nil
 }
 
-func (d dataSourceContact) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = "hexonet_contact"
+func (d *dataSourceContact) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	d.p = req.ProviderData.(*localProvider)
 }
 
-func (d dataSourceContact) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *dataSourceContact) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_contact"
+}
+
+func (d *dataSourceContact) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	if !d.p.configured {
 		utils.MakeNotConfiguredError(&resp.Diagnostics)
 		return
 	}
 
-	var data Contact
-	diags := req.Config.Get(ctx, &data)
+	data := &Contact{}
+	diags := req.Config.Get(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
