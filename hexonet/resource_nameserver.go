@@ -26,6 +26,9 @@ func (r *resourceNameServer) GetSchema(_ context.Context) (tfsdk.Schema, diag.Di
 }
 
 func (r *resourceNameServer) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
 	r.p = req.ProviderData.(*localProvider)
 }
 
