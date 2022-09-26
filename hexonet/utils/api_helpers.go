@@ -138,21 +138,38 @@ func HandleExtraAttributesRead(resp *response.Response) types.Map {
 	}
 }
 
+func extraAttributeName(name string) string {
+	return fmt.Sprintf("X-%s", strings.ToUpper(name))
+}
+
 func HandleExtraAttributesWrite(extraAttributesBox types.Map, oldExtraAttributesBox types.Map, req map[string]interface{}) {
 	// Get all the previous attributes and set them to empty string (remove)
 	// That way, if they are not in the current config, this will clear them correctly
-	if !oldExtraAttributesBox.Null && !oldExtraAttributesBox.Unknown {
+	hasOldAttributes := !oldExtraAttributesBox.Null && !oldExtraAttributesBox.Unknown
+	if hasOldAttributes {
 		for k := range oldExtraAttributesBox.Elems {
-			req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = ""
+			req[extraAttributeName(k)] = ""
 		}
 	}
 
 	for k, v := range extraAttributesBox.Elems {
-		// Treat empty string as un-set
 		vStr := v.(types.String)
-		if vStr.Value == "" {
+
+		// If old == new, do not send anything
+		oldVStr := ""
+		if hasOldAttributes {
+			oldV := oldExtraAttributesBox.Elems[k]
+			if oldV != nil && !oldV.IsNull() && !oldV.IsUnknown() {
+				oldVStrBox := oldV.(types.String)
+				oldVStr = oldVStrBox.Value
+			}
+		}
+
+		if vStr.Value == oldVStr {
+			delete(req, extraAttributeName((k)))
 			continue
 		}
-		req[fmt.Sprintf("X-%s", strings.ToUpper(k))] = vStr.Value
+
+		req[extraAttributeName(k)] = vStr.Value
 	}
 }
