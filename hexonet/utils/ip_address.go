@@ -44,6 +44,10 @@ func (t *ipAddressType) Equal(typ attr.Type) bool {
 	return other.AllowIPv4 == t.AllowIPv4 && other.AllowIPv6 == t.AllowIPv6
 }
 
+func (t *ipAddressType) ValueType(ctx context.Context) attr.Value {
+	return ipAddress{}
+}
+
 func (t *ipAddressType) String() string {
 	if t.AllowIPv4 {
 		if t.AllowIPv6 {
