@@ -111,16 +111,16 @@ func (p *localProvider) DataSources(_ context.Context) []func() datasource.DataS
 }
 
 func getValueOrDefaultToEnv(val types.String, key string, resp *provider.ConfigureResponse, allowEmpty bool) string {
-	if val.Unknown {
+	if val.IsUnknown() {
 		resp.Diagnostics.AddError("Can not configure client", fmt.Sprintf("Unknown value for %s", key))
 		return ""
 	}
 
 	var res string
-	if val.Null {
+	if val.IsNull() {
 		res = os.Getenv(envVarForKey(key))
 	} else {
-		res = val.Value
+		res = val.ValueString()
 	}
 
 	if res == "" && !allowEmpty {
@@ -140,8 +140,8 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
-	if !config.AllowDomainCreateDelete.Null && !config.AllowDomainCreateDelete.Unknown {
-		p.allowDomainCreateDelete = config.AllowDomainCreateDelete.Value
+	if !config.AllowDomainCreateDelete.IsNull() && !config.AllowDomainCreateDelete.IsUnknown() {
+		p.allowDomainCreateDelete = config.AllowDomainCreateDelete.ValueBool()
 	} else {
 		p.allowDomainCreateDelete = false
 	}
@@ -154,12 +154,12 @@ func (p *localProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	highPerformance := false
 	live := true
 
-	if !config.HighPerformance.Null && !config.HighPerformance.Unknown {
-		highPerformance = config.HighPerformance.Value
+	if !config.HighPerformance.IsNull() && !config.HighPerformance.IsUnknown() {
+		highPerformance = config.HighPerformance.ValueBool()
 	}
 
-	if !config.Live.Null && !config.Live.Unknown {
-		live = config.Live.Value
+	if !config.Live.IsNull() && !config.Live.IsUnknown() {
+		live = config.Live.ValueBool()
 	}
 
 	if resp.Diagnostics.HasError() {

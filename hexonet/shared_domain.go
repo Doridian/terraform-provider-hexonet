@@ -193,14 +193,14 @@ type Domain struct {
 }
 
 func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, domain *Domain, oldDomain *Domain, diags *diag.Diagnostics) *response.Response {
-	if domain.Domain.Null || domain.Domain.Unknown {
+	if domain.Domain.IsNull() || domain.Domain.IsUnknown() {
 		diags.AddError("Main ID attribute unknwon or null", "domain is null or unknown")
 		return nil
 	}
 
 	req := map[string]interface{}{
 		"COMMAND": fmt.Sprintf("%sDomain", cmd),
-		"DOMAIN":  domain.Domain.Value,
+		"DOMAIN":  domain.Domain.ValueString(),
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
@@ -216,8 +216,8 @@ func makeDomainCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.C
 		utils.FillRequestArray(ctx, domain.DNSSECDSRecords, oldDomain.DNSSECDSRecords, "SECDNS-DS", req, diags)
 		utils.FillRequestArray(ctx, domain.DNSSECDnsKeyRecords, oldDomain.DNSSECDnsKeyRecords, "SECDNS-KEY", req, diags)
 
-		if !domain.DNSSECMaxSigLifespan.Unknown && !domain.DNSSECMaxSigLifespan.Null {
-			req["SECDNS-MAXSIGLIFE"] = fmt.Sprintf("%d", domain.DNSSECMaxSigLifespan.Value)
+		if !domain.DNSSECMaxSigLifespan.IsUnknown() && !domain.DNSSECMaxSigLifespan.IsNull() {
+			req["SECDNS-MAXSIGLIFE"] = fmt.Sprintf("%d", domain.DNSSECMaxSigLifespan.ValueInt64())
 		} else {
 			req["SECDNS-MAXSIGLIFE"] = "0"
 		}
@@ -245,7 +245,7 @@ func kindDomainRead(ctx context.Context, domain *Domain, cl *apiclient.APIClient
 	var maxSigLife types.Int64
 	msl := utils.ColumnFirstOrDefault(resp, "SECDNS-MAXSIGLIFE", nil)
 	if msl == nil || msl == "" {
-		maxSigLife = types.Int64{Value: 0}
+		maxSigLife = types.Int64Value(0)
 	} else {
 		i, err := strconv.Atoi(msl.(string))
 		if err != nil {
@@ -255,48 +255,48 @@ func kindDomainRead(ctx context.Context, domain *Domain, cl *apiclient.APIClient
 			)
 			return &Domain{}
 		}
-		maxSigLife = types.Int64{Value: int64(i)}
+		maxSigLife = types.Int64Value(int64(i))
 	}
 
 	return &Domain{
-		Domain: types.String{Value: utils.ColumnFirstOrDefault(resp, "ID", "").(string)},
+		Domain: types.StringValue(utils.ColumnFirstOrDefault(resp, "ID", "").(string)),
 
-		NameServers: types.List{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "NAMESERVER", []string{})),
-		},
+		NameServers: types.ListValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "NAMESERVER", []string{})),
+		),
 
-		Status: types.Set{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "STATUS", []string{})),
-		},
-		AuthCode: types.String{Value: utils.ColumnFirstOrDefault(resp, "AUTH", "").(string)},
+		Status: types.SetValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "STATUS", []string{})),
+		),
+		AuthCode: types.StringValue(utils.ColumnFirstOrDefault(resp, "AUTH", "").(string)),
 
-		OwnerContacts: types.Set{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "OWNERCONTACT", []string{})),
-		},
-		AdminContacts: types.Set{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "ADMINCONTACT", []string{})),
-		},
-		TechContacts: types.Set{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "TECHCONTACT", []string{})),
-		},
-		BillingContacts: types.Set{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "BILLINGCONTACT", []string{})),
-		},
+		OwnerContacts: types.SetValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "OWNERCONTACT", []string{})),
+		),
+		AdminContacts: types.SetValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "ADMINCONTACT", []string{})),
+		),
+		TechContacts: types.SetValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "TECHCONTACT", []string{})),
+		),
+		BillingContacts: types.SetValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "BILLINGCONTACT", []string{})),
+		),
 
-		DNSSECDSRecords: types.Set{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "SECDNS-DS", []string{})),
-		},
-		DNSSECDnsKeyRecords: types.Set{
-			ElemType: types.StringType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "SECDNS-KEY", []string{})),
-		},
+		DNSSECDSRecords: types.SetValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "SECDNS-DS", []string{})),
+		),
+		DNSSECDnsKeyRecords: types.SetValueMust(
+			types.StringType,
+			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "SECDNS-KEY", []string{})),
+		),
 
 		DNSSECMaxSigLifespan: maxSigLife,
 

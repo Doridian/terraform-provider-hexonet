@@ -16,7 +16,7 @@ func StringListToAttrListWithIgnore(elems []string, ignore map[string]bool) []at
 		if ignore[elem] {
 			continue
 		}
-		out = append(out, types.String{Value: elem})
+		out = append(out, types.StringValue(elem))
 	}
 
 	return out
@@ -24,31 +24,23 @@ func StringListToAttrListWithIgnore(elems []string, ignore map[string]bool) []at
 
 func AutoBoxString(str interface{}) types.String {
 	if str == nil || str == "" {
-		return types.String{
-			Null: true,
-		}
+		return types.StringNull()
 	}
 
-	return types.String{
-		Value: str.(string),
-	}
+	return types.StringValue(str.(string))
 }
 
 func AutoBoxBoolNumberStr(str interface{}) types.Bool {
 	if str == nil {
-		return types.Bool{
-			Null: true,
-		}
+		return types.BoolNull()
 	}
 
-	return types.Bool{
-		Value: NumberStrToBool(str.(string)),
-	}
+	return types.BoolValue(NumberStrToBool(str.(string)))
 }
 
 func AutoUnboxString(str types.String, def string) string {
-	if str.Null || str.Unknown {
+	if str.IsNull() || str.IsUnknown() {
 		return def
 	}
-	return str.Value
+	return str.ValueString()
 }
