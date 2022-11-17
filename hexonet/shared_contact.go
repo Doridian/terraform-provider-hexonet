@@ -175,17 +175,17 @@ func makeContactCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.
 	if cmd == utils.CommandCreate {
 		req["NEW"] = "1"
 	} else {
-		if contact.ID.Null || contact.ID.Unknown {
+		if contact.ID.IsNull() || contact.ID.IsUnknown() {
 			diags.AddError("Main ID attribute unknwon or null", "id is null or unknown")
 			return nil
 		}
 
-		if !oldContact.ID.Null && !oldContact.ID.Unknown && oldContact.ID.Value != contact.ID.Value {
-			diags.AddError("Main ID attribute changed", fmt.Sprintf("id changed from %s to %s", oldContact.ID.Value, contact.ID.Value))
+		if !oldContact.ID.IsNull() && !oldContact.ID.IsUnknown() && oldContact.ID.ValueString() != contact.ID.ValueString() {
+			diags.AddError("Main ID attribute changed", fmt.Sprintf("id changed from %s to %s", oldContact.ID.ValueString(), contact.ID.ValueString()))
 			return nil
 		}
 
-		req["CONTACT"] = contact.ID.Value
+		req["CONTACT"] = contact.ID.ValueString()
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
@@ -209,12 +209,12 @@ func makeContactCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.
 		req["FAX"] = utils.AutoUnboxString(contact.Fax, "")
 		req["EMAIL"] = utils.AutoUnboxString(contact.Email, "")
 
-		if contact.Disclose.Unknown {
+		if contact.Disclose.IsUnknown() {
 			utils.HandleUnexpectedUnknown(diags)
 			return nil
 		}
 
-		req["DISCLOSE"] = utils.BoolToNumberStr(contact.Disclose.Value)
+		req["DISCLOSE"] = utils.BoolToNumberStr(contact.Disclose.ValueBool())
 
 		req["VATID"] = utils.AutoUnboxString(contact.VatID, "")
 		req["IDAUTHORITY"] = utils.AutoUnboxString(contact.IDAuthority, "")
@@ -250,7 +250,7 @@ func kindContactRead(ctx context.Context, contact *Contact, cl *apiclient.APICli
 	}
 
 	return &Contact{
-		ID: types.String{Value: utils.ColumnFirstOrDefault(resp, "ID", "").(string)},
+		ID: types.StringValue(utils.ColumnFirstOrDefault(resp, "ID", "").(string)),
 
 		Title:      utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "TITLE", nil)),
 		FirstName:  utils.AutoBoxString(utils.ColumnFirstOrDefault(resp, "FIRSTNAME", nil)),

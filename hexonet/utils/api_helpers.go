@@ -128,14 +128,14 @@ func HandleExtraAttributesRead(resp *response.Response) types.Map {
 		// Treat empty string as not present, functionally identical
 		v := ColumnFirstOrDefault(resp, k, nil)
 		if v != nil && v != "" {
-			extraAttributes[n] = types.String{Value: v.(string)}
+			extraAttributes[n] = types.StringValue(v.(string))
 		}
 	}
 
-	return types.Map{
-		Elems:    extraAttributes,
-		ElemType: types.StringType,
-	}
+	return types.MapValueMust(
+		types.StringType,
+		extraAttributes,
+	)
 }
 
 func extraAttributeName(name string) string {
@@ -145,31 +145,32 @@ func extraAttributeName(name string) string {
 func HandleExtraAttributesWrite(extraAttributesBox types.Map, oldExtraAttributesBox types.Map, req map[string]interface{}) {
 	// Get all the previous attributes and set them to empty string (remove)
 	// That way, if they are not in the current config, this will clear them correctly
-	hasOldAttributes := !oldExtraAttributesBox.Null && !oldExtraAttributesBox.Unknown
+	hasOldAttributes := !oldExtraAttributesBox.IsNull() && !oldExtraAttributesBox.IsUnknown()
 	if hasOldAttributes {
-		for k := range oldExtraAttributesBox.Elems {
+		for k := range oldExtraAttributesBox.Elements() {
 			req[extraAttributeName(k)] = ""
 		}
 	}
 
-	for k, v := range extraAttributesBox.Elems {
+	oldElems := oldExtraAttributesBox.Elements()
+	for k, v := range extraAttributesBox.Elements() {
 		vStr := v.(types.String)
 
 		// If old == new, do not send anything
 		oldVStr := ""
 		if hasOldAttributes {
-			oldV := oldExtraAttributesBox.Elems[k]
+			oldV := oldElems[k]
 			if oldV != nil && !oldV.IsNull() && !oldV.IsUnknown() {
 				oldVStrBox := oldV.(types.String)
-				oldVStr = oldVStrBox.Value
+				oldVStr = oldVStrBox.ValueString()
 			}
 		}
 
-		if vStr.Value == oldVStr {
+		if vStr.ValueString() == oldVStr {
 			delete(req, extraAttributeName((k)))
 			continue
 		}
 
-		req[extraAttributeName(k)] = vStr.Value
+		req[extraAttributeName(k)] = vStr.ValueString()
 	}
 }

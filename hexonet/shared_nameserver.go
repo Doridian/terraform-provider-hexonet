@@ -51,14 +51,14 @@ type NameServer struct {
 }
 
 func makeNameServerCommand(ctx context.Context, cl *apiclient.APIClient, cmd utils.CommandType, ns *NameServer, oldNs *NameServer, diags *diag.Diagnostics) *response.Response {
-	if ns.Host.Null || ns.Host.Unknown {
+	if ns.Host.IsNull() || ns.Host.IsUnknown() {
 		diags.AddError("Main ID attribute unknwon or null", "host is null or unknown")
 		return nil
 	}
 
 	req := map[string]interface{}{
 		"COMMAND":    fmt.Sprintf("%sNameserver", cmd),
-		"NAMESERVER": ns.Host.Value,
+		"NAMESERVER": ns.Host.ValueString(),
 	}
 
 	if cmd == utils.CommandCreate || cmd == utils.CommandUpdate {
@@ -81,12 +81,11 @@ func kindNameserverRead(ctx context.Context, ns *NameServer, cl *apiclient.APICl
 		return &NameServer{}
 	}
 
-	return &NameServer{
-		Host: types.String{Value: utils.ColumnFirstOrDefault(resp, "HOST", "").(string)},
+	ipAddresses, subDiags := types.ListValue(ipAddressType, utils.StringListToAttrList(utils.ColumnOrDefault(resp, "IPADDRESS", []string{})))
+	diags.Append(subDiags...)
 
-		IpAddresses: types.List{
-			ElemType: ipAddressType,
-			Elems:    utils.StringListToAttrList(utils.ColumnOrDefault(resp, "IPADDRESS", []string{})),
-		},
+	return &NameServer{
+		Host:        types.StringValue(utils.ColumnFirstOrDefault(resp, "HOST", "").(string)),
+		IpAddresses: ipAddresses,
 	}
 }
