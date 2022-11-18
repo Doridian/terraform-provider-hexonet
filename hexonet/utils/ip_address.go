@@ -65,11 +65,11 @@ func (t *ipAddressType) TerraformType(ctx context.Context) tftypes.Type {
 
 func (t *ipAddressType) ValueFromTerraform(ctx context.Context, val tftypes.Value) (attr.Value, error) {
 	if !val.IsKnown() {
-		return ipAddress{attrType: t, Unknown: true}, nil
+		return ipAddress{attrType: t, unknown: true}, nil
 	}
 
 	if val.IsNull() {
-		return ipAddress{attrType: t, Null: true}, nil
+		return ipAddress{attrType: t, null: true}, nil
 	}
 
 	var s string
@@ -141,17 +141,17 @@ func (t *ipAddressType) IPFromString(s string) (ipAddress, error) {
 
 	return ipAddress{
 		attrType: t,
-		Unknown:  false,
-		Null:     false,
-		Value:    ip,
+		unknown:  false,
+		null:     false,
+		value:    ip,
 	}, nil
 }
 
 type ipAddress struct {
 	attrType *ipAddressType
-	Unknown  bool
-	Null     bool
-	Value    net.IP
+	unknown  bool
+	null     bool
+	value    net.IP
 }
 
 var _ attr.Value = ipAddress{}
@@ -162,39 +162,39 @@ func (ip ipAddress) Equal(other attr.Value) bool {
 		return false
 	}
 
-	if ip.Unknown || otherIP.Unknown {
+	if ip.unknown || otherIP.unknown {
 		return false
 	}
 
-	if ip.Null {
-		return otherIP.Null
+	if ip.null {
+		return otherIP.null
 	}
 
-	return otherIP.Value.Equal(ip.Value)
+	return otherIP.value.Equal(ip.value)
 }
 
 func (ip ipAddress) IsNull() bool {
-	return ip.Null
+	return ip.null
 }
 
 func (ip ipAddress) IsUnknown() bool {
-	return ip.Unknown
+	return ip.unknown
 }
 
 func (ip ipAddress) String() string {
-	return ip.Value.String()
+	return ip.value.String()
 }
 
 func (ip ipAddress) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	if ip.Null {
+	if ip.null {
 		return tftypes.NewValue(tftypes.String, nil), nil
 	}
 
-	if ip.Unknown {
+	if ip.unknown {
 		return tftypes.NewValue(tftypes.String, tftypes.UnknownValue), nil
 	}
 
-	return tftypes.NewValue(tftypes.String, ip.Value.String()), nil
+	return tftypes.NewValue(tftypes.String, ip.value.String()), nil
 }
 
 func (ip ipAddress) Type(ctx context.Context) attr.Type {

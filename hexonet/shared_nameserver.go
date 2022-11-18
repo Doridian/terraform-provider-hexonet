@@ -6,6 +6,7 @@ import (
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -81,7 +82,13 @@ func kindNameserverRead(ctx context.Context, ns *NameServer, cl *apiclient.APICl
 		return &NameServer{}
 	}
 
-	ipAddresses, subDiags := types.ListValue(ipAddressType, utils.StringListToAttrList(utils.ColumnOrDefault(resp, "IPADDRESS", []string{})))
+	ipAddresses, subDiags := types.ListValue(ipAddressType, utils.StringListToTypedAttrList(utils.ColumnOrDefault(resp, "IPADDRESS", []string{}), func(str string) attr.Value {
+		ipVal, err := ipAddressType.IPFromString(str)
+		if err != nil {
+			diags.AddError("Error parsing IP address", err.Error())
+		}
+		return ipVal
+	}))
 	diags.Append(subDiags...)
 
 	return &NameServer{

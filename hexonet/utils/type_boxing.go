@@ -5,18 +5,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type TypeCtor = func(str string) attr.Value
+
+func stringCtor(str string) attr.Value {
+	return types.StringValue(str)
+}
+
 func StringListToAttrList(elems []string) []attr.Value {
-	return StringListToAttrListWithIgnore(elems, map[string]bool{})
+	return StringListToTypedAttrList(elems, stringCtor)
+}
+
+func StringListToTypedAttrList(elems []string, typeCtor TypeCtor) []attr.Value {
+	return StringListToTypedAttrListWithIgnore(elems, map[string]bool{}, typeCtor)
 }
 
 func StringListToAttrListWithIgnore(elems []string, ignore map[string]bool) []attr.Value {
+	return StringListToTypedAttrListWithIgnore(elems, ignore, stringCtor)
+}
+
+func StringListToTypedAttrListWithIgnore(elems []string, ignore map[string]bool, typeCtor TypeCtor) []attr.Value {
 	out := make([]attr.Value, 0)
 
 	for _, elem := range elems {
 		if ignore[elem] {
 			continue
 		}
-		out = append(out, types.StringValue(elem))
+		out = append(out, typeCtor(elem))
 	}
 
 	return out
