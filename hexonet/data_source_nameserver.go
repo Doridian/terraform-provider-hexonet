@@ -5,8 +5,7 @@ import (
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
 type dataSourceNameServer struct {
@@ -17,11 +16,11 @@ func newDataSourceNameServer() datasource.DataSource {
 	return &dataSourceNameServer{}
 }
 
-func (d *dataSourceNameServer) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *dataSourceNameServer) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		Attributes:  makeNameServerSchema(true),
 		Description: "Nameserver object, used to register so-called \"glue\" records when a domain's nameservers use hosts on the same domain (example: example.com using ns1.example.com)",
-	}, nil
+	}
 }
 
 func (d *dataSourceNameServer) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

@@ -5,8 +5,7 @@ import (
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
 type dataSourceDomain struct {
@@ -17,11 +16,11 @@ func newDataSourceDomain() datasource.DataSource {
 	return &dataSourceDomain{}
 }
 
-func (d *dataSourceDomain) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *dataSourceDomain) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		Attributes:  makeDomainSchema(true),
 		Description: "Domain object",
-	}, nil
+	}
 }
 
 func (d *dataSourceDomain) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

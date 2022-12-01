@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 type resourceDomain struct {
@@ -18,11 +17,11 @@ func newResourceDomain() resource.Resource {
 	return &resourceDomain{}
 }
 
-func (r *resourceDomain) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *resourceDomain) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		Attributes:  makeDomainSchema(false),
 		Description: "Domain object, can be used to configure most attributes of domains",
-	}, nil
+	}
 }
 
 func (r *resourceDomain) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

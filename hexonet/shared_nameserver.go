@@ -8,8 +8,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
@@ -19,28 +21,24 @@ const MAX_IPADDRESS = 12
 
 var ipAddressType = utils.IPAddressType(true, true)
 
-func makeNameServerSchema(readOnly bool) map[string]tfsdk.Attribute {
-	res := map[string]tfsdk.Attribute{
-		"host": {
-			Type:     types.StringType,
+func makeNameServerSchema(readOnly bool) map[string]schema.Attribute {
+	res := map[string]schema.Attribute{
+		"host": schema.StringAttribute{
 			Required: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
 			},
 			Description: "Hostname of the nameserver (example: ns1.example.com)",
 		},
-		"ip_addresses": {
-			Type:     types.ListType{ElemType: ipAddressType},
-			Required: true,
-			Validators: []tfsdk.AttributeValidator{
+		"ip_addresses": schema.ListAttribute{
+			ElementType: ipAddressType,
+			Required:    !readOnly,
+			Computed:    readOnly,
+			Validators: []validator.List{
 				listvalidator.SizeBetween(1, MAX_IPADDRESS),
 			},
 			Description: fmt.Sprintf("IP addresses of the nameserver (list must have between 1 and %d entries)", MAX_IPADDRESS),
 		},
-	}
-
-	if readOnly {
-		makeSchemaReadOnly(res, "host")
 	}
 
 	return res

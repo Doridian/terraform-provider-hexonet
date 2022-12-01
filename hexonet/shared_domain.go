@@ -9,8 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
@@ -21,152 +27,128 @@ const MAX_WHOIS_BANNER = 3
 
 const MAX_CONTACTS = 3
 
-func makeDomainSchema(readOnly bool) map[string]tfsdk.Attribute {
-	res := map[string]tfsdk.Attribute{
-		"domain": {
-			Type:     types.StringType,
+func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
+	res := map[string]schema.Attribute{
+		"domain": schema.StringAttribute{
 			Required: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
 			},
 			Description: "Domain name (example: example.com)",
 		},
-		"name_servers": {
-			Type: types.ListType{ // This is a list because it is ordered and order can be user-configured
-				ElemType: types.StringType,
+		"name_servers": schema.ListAttribute{
+			// This is a list because it is ordered and order can be user-configured
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-			Validators: []tfsdk.AttributeValidator{
+			Validators: []validator.List{
 				listvalidator.SizeBetween(1, MAX_NAMESERVERS),
 			},
 			Description: fmt.Sprintf("Name servers to associate with the domain (between 1 and %d)", MAX_NAMESERVERS),
 		},
-		"auth_code": {
-			Type:      types.StringType,
+		"auth_code": schema.StringAttribute{
 			Sensitive: true,
 			Computed:  true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 			Description: "Auth code of the domain (for transfers)",
 		},
-		"status": {
-			Type: types.SetType{
-				ElemType: types.StringType,
-			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+		"status": schema.SetAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
 			Description: "Various status flags of the domain (clientTransferProhibited, ...)",
 		},
-		"owner_contacts": {
-			Type: types.SetType{
-				ElemType: types.StringType,
+		"owner_contacts": schema.SetAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-			Validators: []tfsdk.AttributeValidator{
+			Validators: []validator.Set{
 				setvalidator.SizeBetween(1, 1),
 			},
 			Description: "Owner contact (list must have exactly 1 entry)",
 		},
-		"admin_contacts": {
-			Type: types.SetType{
-				ElemType: types.StringType,
+		"admin_contacts": schema.SetAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-			Validators: []tfsdk.AttributeValidator{
+			Validators: []validator.Set{
 				setvalidator.SizeBetween(1, MAX_CONTACTS),
 			},
 			Description: fmt.Sprintf("Admin contacts (ADMIN-C) (list must have between 1 and %d entries)", MAX_CONTACTS),
 		},
-		"tech_contacts": {
-			Type: types.SetType{
-				ElemType: types.StringType,
+		"tech_contacts": schema.SetAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-			Validators: []tfsdk.AttributeValidator{
+			Validators: []validator.Set{
 				setvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
 			Description: fmt.Sprintf("Tech contacts (TECH-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
-		"billing_contacts": {
-			Type: types.SetType{
-				ElemType: types.StringType,
+		"billing_contacts": schema.SetAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-			Validators: []tfsdk.AttributeValidator{
+			Validators: []validator.Set{
 				setvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
 			Description: fmt.Sprintf("Billing contacts (BILLING-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
 		},
-		"dnssec_ds_records": {
-			Type: types.SetType{
-				ElemType: types.StringType,
-			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+		"dnssec_ds_records": schema.SetAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
 			Description: "DNSSEC DS records",
 		},
-		"dnssec_dnskey_records": {
-			Type: types.SetType{
-				ElemType: types.StringType,
-			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+		"dnssec_dnskey_records": schema.SetAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
 			Description: "DNSSEC DNSKEY records",
 		},
-		"dnssec_max_sig_lifespan": {
-			Type:     types.Int64Type,
-			Optional: true,
+		"dnssec_max_sig_lifespan": schema.Int64Attribute{
+			Optional: !readOnly,
 			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
 			},
 			Description: "DNSSEC maximum key lifespan",
 		},
-		"extra_attributes": {
-			Type: types.MapType{
-				ElemType: types.StringType,
-			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+		"extra_attributes": schema.MapAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Map{
+				mapplanmodifier.UseStateForUnknown(),
 			},
 			Description: "Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/MODIFYDOMAIN.md)",
 		},
-	}
-
-	if readOnly {
-		makeSchemaReadOnly(res, "domain")
 	}
 
 	return res

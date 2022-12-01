@@ -5,8 +5,7 @@ import (
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
 type dataSourceContact struct {
@@ -17,11 +16,11 @@ func newDataSourceContact() datasource.DataSource {
 	return &dataSourceContact{}
 }
 
-func (d *dataSourceContact) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (r *dataSourceContact) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		Attributes:  makeContactSchema(true),
 		Description: "Contact object, used for domain owner/admin/...",
-	}, nil
+	}
 }
 
 func (d *dataSourceContact) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {

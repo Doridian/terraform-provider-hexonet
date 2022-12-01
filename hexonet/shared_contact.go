@@ -6,131 +6,127 @@ import (
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
-func makeContactSchema(readOnly bool) map[string]tfsdk.Attribute {
-	res := map[string]tfsdk.Attribute{
-		"id": {
-			Type:     types.StringType,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.RequiresReplace(),
-				resource.UseStateForUnknown(),
+func makeContactSchema(readOnly bool) map[string]schema.Attribute {
+	res := map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Required: readOnly,
+			Computed: !readOnly,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+				stringplanmodifier.UseStateForUnknown(),
 			},
 			Description: "The ID of the contact",
 		},
-		"title": {
-			Type:        types.StringType,
-			Optional:    true,
+		"title": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Description: "Title of contact person (example: Mr., Mrs., Dr., ...)",
 		},
-		"first_name": {
-			Type:        types.StringType,
-			Required:    true,
+		"first_name": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "First name of contact person",
 		},
-		"middle_name": {
-			Type:        types.StringType,
-			Optional:    true,
+		"middle_name": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Description: "Middle name of contact person",
 		},
-		"last_name": {
-			Type:        types.StringType,
-			Required:    true,
+		"last_name": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "Last name of contact person",
 		},
-		"organization": {
-			Type:        types.StringType,
-			Optional:    true,
+		"organization": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Description: "Organization",
 		},
-		"address_line_1": {
-			Type:        types.StringType,
-			Required:    true,
+		"address_line_1": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "Address line 1",
 		},
-		"address_line_2": {
-			Type:        types.StringType,
-			Optional:    true,
+		"address_line_2": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Description: "Address line 2",
 		},
-		"city": {
-			Type:        types.StringType,
-			Required:    true,
+		"city": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "City",
 		},
-		"state": {
-			Type:        types.StringType,
-			Optional:    true,
+		"state": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Description: "State",
 		},
-		"zip": {
-			Type:        types.StringType,
-			Required:    true,
+		"zip": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "ZIP code",
 		},
-		"country": {
-			Type:        types.StringType,
-			Required:    true,
+		"country": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "Country (2-letter country code)",
 		},
-		"phone": {
-			Type:        types.StringType,
-			Required:    true,
+		"phone": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "Phone number (example: +1.5555555555)",
 		},
-		"fax": {
-			Type:        types.StringType,
-			Optional:    true,
+		"fax": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Description: "Fax number (example: +1.5555555555)",
 		},
-		"email": {
-			Type:        types.StringType,
-			Required:    true,
+		"email": schema.StringAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "E-Mail address",
 		},
-		"disclose": {
-			Type:        types.BoolType,
-			Required:    true,
+		"disclose": schema.BoolAttribute{
+			Required:    !readOnly,
+			Computed:    readOnly,
 			Description: "Whether to disclose personal details of this contact publicly",
 		},
-		"vat_id": {
-			Type:        types.StringType,
-			Optional:    true,
+		"vat_id": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Description: "VAT ID",
 		},
-		"id_authority": {
-			Type:        types.StringType,
-			Optional:    true,
+		"id_authority": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Sensitive:   true,
 			Description: "Authority of the government ID used in id_number",
 		},
-		"id_number": {
-			Type:        types.StringType,
-			Optional:    true,
+		"id_number": schema.StringAttribute{
+			Optional:    !readOnly,
+			Computed:    readOnly,
 			Sensitive:   true,
 			Description: "Government ID number",
 		},
-		"extra_attributes": {
-			Type: types.MapType{
-				ElemType: types.StringType,
-			},
-			Optional: true,
-			Computed: true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+		"extra_attributes": schema.MapAttribute{
+			ElementType: types.StringType,
+			Optional:    !readOnly,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Map{
+				mapplanmodifier.UseStateForUnknown(),
 			},
 			Description: "Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/CONTACT/MODIFYCONTACT.md)",
 		},
-	}
-
-	if readOnly {
-		makeSchemaReadOnly(res, "id")
 	}
 
 	return res
