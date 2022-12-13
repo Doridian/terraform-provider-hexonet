@@ -118,6 +118,8 @@ github.com/hashicorp/terraform-plugin-framework-validators v0.6.0 h1:j8GlgzuTjbb
 github.com/hashicorp/terraform-plugin-framework-validators v0.6.0/go.mod h1:iOYhZQinlZ0R/M3Q3nCXS4dikZ7P41d5b7ezpe9uoIw=
 github.com/hashicorp/terraform-plugin-framework-validators v0.7.0 h1:tIYOMNmEMQIc6mwun8nX3e5U3TkgZg1TpXRlBEBQHwY=
 github.com/hashicorp/terraform-plugin-framework-validators v0.7.0/go.mod h1:e1RKREyEVdd3FK8Jfgz8L/ThQgcJKLb4ZJxNzsuIH0A=
+github.com/hashicorp/terraform-plugin-framework-validators v0.8.0 h1:hKCuQMjD7W7reAoWn6GLkNwrDNjY9RCBWQZOJxe5LlQ=
+github.com/hashicorp/terraform-plugin-framework-validators v0.8.0/go.mod h1:qkrZ542jRiCwwl3ZN/3eTKhGJ4HIBkSxGXnjJoAWtxo=
 github.com/hashicorp/terraform-plugin-go v0.14.1 h1:cwZzPYla82XwAqpLhSzdVsOMU+6H29tczAwrB0z9Zek=
 github.com/hashicorp/terraform-plugin-go v0.14.1/go.mod h1:Bc/K6K26BQ2FHqIELPbpKtt2CzzbQou+0UQF3/0NsCQ=
 github.com/hashicorp/terraform-plugin-go v0.14.2 h1:rhsVEOGCnY04msNymSvbUsXfRLKh9znXZmHlf5e8mhE=
