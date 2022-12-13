@@ -8,10 +8,9 @@ import (
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hexonet/go-sdk/v3/apiclient"
 	"github.com/hexonet/go-sdk/v3/response"
@@ -45,49 +44,42 @@ func envDescription(desc, key string) string {
 	return fmt.Sprintf("%s (environment variable %s)", desc, envVarForKey(key))
 }
 
-func (p *localProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"username": {
-				Type:        types.StringType,
+func (p *localProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"username": schema.StringAttribute{
 				Optional:    true,
 				Description: envDescription("Username", "username"),
 			},
-			"role": {
-				Type:        types.StringType,
+			"role": schema.StringAttribute{
 				Optional:    true,
 				Description: envDescription("Role (sub-user)", "role"),
 			},
-			"password": {
-				Type:        types.StringType,
+			"password": schema.StringAttribute{
 				Sensitive:   true,
 				Optional:    true,
 				Description: envDescription("Password", "password"),
 			},
-			"mfa_token": {
-				Type:        types.StringType,
+			"mfa_token": schema.StringAttribute{
 				Sensitive:   true,
 				Optional:    true,
 				Description: envDescription("MFA token (required if MFA is enabled)", "mfa_token"),
 			},
-			"live": {
-				Type:        types.BoolType,
+			"live": schema.BoolAttribute{
 				Optional:    true,
 				Description: envDescription("Whether to use the live (true) or the OTE/test (false) system", "live"),
 			},
-			"high_performance": {
-				Type:        types.BoolType,
+			"high_performance": schema.BoolAttribute{
 				Optional:    true,
 				Description: envDescription("Whether to use high-performance connection establishment (might need additional setup)", "high_performance"),
 			},
-			"allow_domain_create_delete": {
-				Type:        types.BoolType,
+			"allow_domain_create_delete": schema.BoolAttribute{
 				Required:    true,
 				Description: "Whether to use AddDomain / DeleteDomain to send domain registration/deletion requests, otherwise will only read and update domains, never register or delete (extreme caution should be taken when enabling this option!)",
 			},
 		},
 		Description: "Provider for Hexonet domain API",
-	}, nil
+	}
 }
 
 func (p *localProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
