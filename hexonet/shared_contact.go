@@ -15,11 +15,11 @@ import (
 	"github.com/hexonet/go-sdk/v3/response"
 )
 
-func makeContactSchema(readOnly bool) map[string]schema.Attribute {
+func makeContactResourceSchema() map[string]schema.Attribute {
 	res := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Required: readOnly,
-			Computed: !readOnly,
+			Required: false,
+			Computed: true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 				stringplanmodifier.UseStateForUnknown(),
@@ -27,100 +27,100 @@ func makeContactSchema(readOnly bool) map[string]schema.Attribute {
 			Description: "The ID of the contact",
 		},
 		"title": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Description: "Title of contact person (example: Mr., Mrs., Dr., ...)",
 		},
 		"first_name": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "First name of contact person",
 		},
 		"middle_name": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Description: "Middle name of contact person",
 		},
 		"last_name": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "Last name of contact person",
 		},
 		"organization": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Description: "Organization",
 		},
 		"address_line_1": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "Address line 1",
 		},
 		"address_line_2": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Description: "Address line 2",
 		},
 		"city": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "City",
 		},
 		"state": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Description: "State",
 		},
 		"zip": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "ZIP code",
 		},
 		"country": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "Country (2-letter country code)",
 		},
 		"phone": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "Phone number (example: +1.5555555555)",
 		},
 		"fax": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Description: "Fax number (example: +1.5555555555)",
 		},
 		"email": schema.StringAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "E-Mail address",
 		},
 		"disclose": schema.BoolAttribute{
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Description: "Whether to disclose personal details of this contact publicly",
 		},
 		"vat_id": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Description: "VAT ID",
 		},
 		"id_authority": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Sensitive:   true,
 			Description: "Authority of the government ID used in id_number",
 		},
 		"id_number": schema.StringAttribute{
-			Optional:    !readOnly,
-			Computed:    readOnly,
+			Optional:    true,
+			Computed:    false,
 			Sensitive:   true,
 			Description: "Government ID number",
 		},
 		"extra_attributes": schema.MapAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Map{
 				mapplanmodifier.UseStateForUnknown(),

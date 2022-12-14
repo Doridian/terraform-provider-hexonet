@@ -18,7 +18,7 @@ func newDataSourceDomain() datasource.DataSource {
 
 func (r *dataSourceDomain) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes:  makeDomainSchema(true),
+		Attributes:  utils.ResourceSchemaToDataSourceSchema(makeDomainResourceSchema(), "domain"),
 		Description: "Domain object",
 	}
 }

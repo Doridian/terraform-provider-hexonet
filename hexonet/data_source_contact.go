@@ -18,7 +18,7 @@ func newDataSourceContact() datasource.DataSource {
 
 func (r *dataSourceContact) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes:  makeContactSchema(true),
+		Attributes:  utils.ResourceSchemaToDataSourceSchema(makeContactResourceSchema(), "id"),
 		Description: "Contact object, used for domain owner/admin/...",
 	}
 }

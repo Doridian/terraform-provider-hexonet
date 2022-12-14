@@ -27,7 +27,7 @@ const MAX_WHOIS_BANNER = 3
 
 const MAX_CONTACTS = 3
 
-func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
+func makeDomainResourceSchema() map[string]schema.Attribute {
 	res := map[string]schema.Attribute{
 		"domain": schema.StringAttribute{
 			Required: true,
@@ -39,7 +39,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		"name_servers": schema.ListAttribute{
 			// This is a list because it is ordered and order can be user-configured
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.List{
 				listplanmodifier.UseStateForUnknown(),
@@ -59,7 +59,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"status": schema.SetAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Set{
 				setplanmodifier.UseStateForUnknown(),
@@ -68,7 +68,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"owner_contacts": schema.SetAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Set{
 				setplanmodifier.UseStateForUnknown(),
@@ -80,7 +80,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"admin_contacts": schema.SetAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Set{
 				setplanmodifier.UseStateForUnknown(),
@@ -92,7 +92,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"tech_contacts": schema.SetAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Set{
 				setplanmodifier.UseStateForUnknown(),
@@ -104,7 +104,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"billing_contacts": schema.SetAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Set{
 				setplanmodifier.UseStateForUnknown(),
@@ -116,7 +116,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"dnssec_ds_records": schema.SetAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Set{
 				setplanmodifier.UseStateForUnknown(),
@@ -125,7 +125,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"dnssec_dnskey_records": schema.SetAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Set{
 				setplanmodifier.UseStateForUnknown(),
@@ -133,7 +133,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 			Description: "DNSSEC DNSKEY records",
 		},
 		"dnssec_max_sig_lifespan": schema.Int64Attribute{
-			Optional: !readOnly,
+			Optional: true,
 			Computed: true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
@@ -142,7 +142,7 @@ func makeDomainSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"extra_attributes": schema.MapAttribute{
 			ElementType: types.StringType,
-			Optional:    !readOnly,
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.Map{
 				mapplanmodifier.UseStateForUnknown(),

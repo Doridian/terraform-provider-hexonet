@@ -19,7 +19,7 @@ func newResourceDomain() resource.Resource {
 
 func (r *resourceDomain) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes:  makeDomainSchema(false),
+		Attributes:  makeDomainResourceSchema(),
 		Description: "Domain object, can be used to configure most attributes of domains",
 	}
 }

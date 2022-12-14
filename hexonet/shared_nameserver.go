@@ -21,7 +21,7 @@ const MAX_IPADDRESS = 12
 
 var ipAddressType = utils.IPAddressType(true, true)
 
-func makeNameServerSchema(readOnly bool) map[string]schema.Attribute {
+func makeNameServerResourceSchema() map[string]schema.Attribute {
 	res := map[string]schema.Attribute{
 		"host": schema.StringAttribute{
 			Required: true,
@@ -32,8 +32,8 @@ func makeNameServerSchema(readOnly bool) map[string]schema.Attribute {
 		},
 		"ip_addresses": schema.ListAttribute{
 			ElementType: ipAddressType,
-			Required:    !readOnly,
-			Computed:    readOnly,
+			Required:    true,
+			Computed:    false,
 			Validators: []validator.List{
 				listvalidator.SizeBetween(1, MAX_IPADDRESS),
 			},

@@ -19,7 +19,7 @@ func newResourceNameServer() resource.Resource {
 
 func (r *resourceNameServer) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes:  makeNameServerSchema(false),
+		Attributes:  makeNameServerResourceSchema(),
 		Description: "Nameserver object, used to register so-called \"glue\" records when a domain's nameservers use hosts on the same domain (example: example.com using ns1.example.com)",
 	}
 }

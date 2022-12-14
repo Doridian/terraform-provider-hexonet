@@ -19,7 +19,7 @@ func newResourceContact() resource.Resource {
 
 func (r *resourceContact) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes:  makeContactSchema(false),
+		Attributes:  makeContactResourceSchema(),
 		Description: "Contact object, used for domain owner/admin/...",
 	}
 }

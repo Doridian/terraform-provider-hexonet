@@ -18,7 +18,7 @@ func newDataSourceNameServer() datasource.DataSource {
 
 func (r *dataSourceNameServer) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes:  makeNameServerSchema(true),
+		Attributes:  utils.ResourceSchemaToDataSourceSchema(makeNameServerResourceSchema(), "host"),
 		Description: "Nameserver object, used to register so-called \"glue\" records when a domain's nameservers use hosts on the same domain (example: example.com using ns1.example.com)",
 	}
 }
