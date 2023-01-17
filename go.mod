@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework v1.1.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.9.0
 	github.com/hashicorp/terraform-plugin-go v0.14.3
-	github.com/hexonet/go-sdk/v3 v3.5.4
+	github.com/hexonet/go-sdk/v3 v3.5.5
 )
 
 require (
