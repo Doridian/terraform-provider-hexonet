@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
+	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/apiclient"
+	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/response"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hexonet/go-sdk/v3/apiclient"
-	"github.com/hexonet/go-sdk/v3/response"
 )
 
 func New() provider.Provider {
