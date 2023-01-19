@@ -3,8 +3,8 @@ package utils
 import (
 	"fmt"
 
+	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/response"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hexonet/go-sdk/v3/response"
 )
 
 func MakeNotConfiguredError(diags *diag.Diagnostics) {

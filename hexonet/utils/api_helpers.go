@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/response"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hexonet/go-sdk/v3/response"
 )
 
 // Useful constants

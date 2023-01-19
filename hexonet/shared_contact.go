@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
+	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/apiclient"
+	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/response"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hexonet/go-sdk/v3/apiclient"
-	"github.com/hexonet/go-sdk/v3/response"
 )
 
 func makeContactResourceSchema() map[string]schema.Attribute {
