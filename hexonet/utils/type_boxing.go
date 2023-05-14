@@ -24,6 +24,8 @@ func StringListToAttrListWithIgnore(elems []string, ignore map[string]bool) []at
 }
 
 func StringListToTypedAttrListWithIgnore(elems []string, ignore map[string]bool, typeCtor TypeCtor) []attr.Value {
+	ignore[""] = true
+
 	out := make([]attr.Value, 0)
 
 	for _, elem := range elems {
