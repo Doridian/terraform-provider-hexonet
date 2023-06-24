@@ -40,5 +40,3 @@ Contact object, used for domain owner/admin/...
 - `title` (String) Title of contact person (example: Mr., Mrs., Dr., ...)
 - `vat_id` (String) VAT ID
 - `zip` (String) ZIP code
-
-

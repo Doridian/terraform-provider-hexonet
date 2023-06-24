@@ -19,5 +19,3 @@ Nameserver object, used to register so-called "glue" records when a domain's nam
 
 - `host` (String) Hostname of the nameserver (example: ns1.example.com)
 - `ip_addresses` (List of String) IP addresses of the nameserver (list must have between 1 and 12 entries)
-
-

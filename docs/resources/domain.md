@@ -35,5 +35,3 @@ Domain object, can be used to configure most attributes of domains
 ### Read-Only
 
 - `auth_code` (String, Sensitive) Auth code of the domain (for transfers)
-
-

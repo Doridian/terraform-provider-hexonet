@@ -43,5 +43,3 @@ Contact object, used for domain owner/admin/...
 ### Read-Only
 
 - `id` (String) The ID of the contact
-
-

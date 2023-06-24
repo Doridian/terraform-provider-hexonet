@@ -32,5 +32,3 @@ Domain object
 - `owner_contacts` (Set of String) Owner contact (list must have exactly 1 entry)
 - `status` (Set of String) Various status flags of the domain (clientTransferProhibited, ...)
 - `tech_contacts` (Set of String) Tech contacts (TECH-C) (list must have between 0 and 3 entries)
-
-
