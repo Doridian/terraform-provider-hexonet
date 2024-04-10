@@ -8,12 +8,10 @@ import (
 	"github.com/Doridian/terraform-provider-hexonet/hexonet/utils"
 	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/apiclient"
 	"github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3/response"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
@@ -36,16 +34,15 @@ func makeDomainResourceSchema() map[string]schema.Attribute {
 			},
 			Description: "Domain name (example: example.com)",
 		},
-		"name_servers": schema.ListAttribute{
-			// This is a list because it is ordered and order can be user-configured
+		"name_servers": schema.SetAttribute{
 			ElementType: types.StringType,
 			Optional:    true,
 			Computed:    true,
-			PlanModifiers: []planmodifier.List{
-				listplanmodifier.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
-			Validators: []validator.List{
-				listvalidator.SizeBetween(1, MAX_NAMESERVERS),
+			Validators: []validator.Set{
+				setvalidator.SizeBetween(1, MAX_NAMESERVERS),
 			},
 			Description: fmt.Sprintf("Name servers to associate with the domain (between 1 and %d)", MAX_NAMESERVERS),
 		},
@@ -157,7 +154,7 @@ func makeDomainResourceSchema() map[string]schema.Attribute {
 type Domain struct {
 	Domain types.String `tfsdk:"domain"`
 
-	NameServers types.List `tfsdk:"name_servers"`
+	NameServers types.Set `tfsdk:"name_servers"`
 
 	OwnerContacts   types.Set `tfsdk:"owner_contacts"`
 	AdminContacts   types.Set `tfsdk:"admin_contacts"`
@@ -243,7 +240,7 @@ func kindDomainRead(ctx context.Context, domain *Domain, cl *apiclient.APIClient
 	return &Domain{
 		Domain: types.StringValue(utils.ColumnFirstOrDefault(resp, "ID", "").(string)),
 
-		NameServers: types.ListValueMust(
+		NameServers: types.SetValueMust(
 			types.StringType,
 			utils.StringListToAttrList(utils.ColumnOrDefault(resp, "NAMESERVER", []string{})),
 		),
