@@ -28,7 +28,7 @@ Domain object
 - `dnssec_ds_records` (Set of String) DNSSEC DS records
 - `dnssec_max_sig_lifespan` (Number) DNSSEC maximum key lifespan
 - `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/MODIFYDOMAIN.md)
-- `name_servers` (List of String) Name servers to associate with the domain (between 1 and 12)
+- `name_servers` (Set of String) Name servers to associate with the domain (between 1 and 12)
 - `owner_contacts` (Set of String) Owner contact (list must have exactly 1 entry)
 - `status` (Set of String) Various status flags of the domain (clientTransferProhibited, ...)
 - `tech_contacts` (Set of String) Tech contacts (TECH-C) (list must have between 0 and 3 entries)
