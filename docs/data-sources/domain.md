@@ -21,14 +21,14 @@ Domain object
 
 ### Read-Only
 
-- `admin_contacts` (Set of String) Admin contacts (ADMIN-C) (list must have between 1 and 3 entries)
+- `admin_contacts` (Set of String) Admin contacts (ADMIN-C) (between 1 and 3 entries)
 - `auth_code` (String, Sensitive) Auth code of the domain (for transfers)
-- `billing_contacts` (Set of String) Billing contacts (BILLING-C) (list must have between 0 and 3 entries)
+- `billing_contacts` (Set of String) Billing contacts (BILLING-C) (between 0 and 3 entries)
 - `dnssec_dnskey_records` (Set of String) DNSSEC DNSKEY records
 - `dnssec_ds_records` (Set of String) DNSSEC DS records
 - `dnssec_max_sig_lifespan` (Number) DNSSEC maximum key lifespan
 - `extra_attributes` (Map of String) Map of X- attributes, the X- is prefixed automatically (see https://github.com/hexonet/hexonet-api-documentation/blob/master/API/DOMAIN/MODIFYDOMAIN.md)
 - `name_servers` (Set of String) Name servers to associate with the domain (between 1 and 12)
-- `owner_contacts` (Set of String) Owner contact (list must have exactly 1 entry)
+- `owner_contacts` (Set of String) Owner contact (exactly 1 entry)
 - `status` (Set of String) Various status flags of the domain (clientTransferProhibited, ...)
-- `tech_contacts` (Set of String) Tech contacts (TECH-C) (list must have between 0 and 3 entries)
+- `tech_contacts` (Set of String) Tech contacts (TECH-C) (between 0 and 3 entries)

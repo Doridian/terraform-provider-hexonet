@@ -37,7 +37,7 @@ func makeNameServerResourceSchema() map[string]schema.Attribute {
 			Validators: []validator.List{
 				listvalidator.SizeBetween(1, MAX_IPADDRESS),
 			},
-			Description: fmt.Sprintf("IP addresses of the nameserver (list must have between 1 and %d entries)", MAX_IPADDRESS),
+			Description: fmt.Sprintf("IP addresses of the nameserver (between 1 and %d entries)", MAX_IPADDRESS),
 		},
 	}
 

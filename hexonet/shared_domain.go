@@ -73,7 +73,7 @@ func makeDomainResourceSchema() map[string]schema.Attribute {
 			Validators: []validator.Set{
 				setvalidator.SizeBetween(1, 1),
 			},
-			Description: "Owner contact (list must have exactly 1 entry)",
+			Description: "Owner contact (exactly 1 entry)",
 		},
 		"admin_contacts": schema.SetAttribute{
 			ElementType: types.StringType,
@@ -85,7 +85,7 @@ func makeDomainResourceSchema() map[string]schema.Attribute {
 			Validators: []validator.Set{
 				setvalidator.SizeBetween(1, MAX_CONTACTS),
 			},
-			Description: fmt.Sprintf("Admin contacts (ADMIN-C) (list must have between 1 and %d entries)", MAX_CONTACTS),
+			Description: fmt.Sprintf("Admin contacts (ADMIN-C) (between 1 and %d entries)", MAX_CONTACTS),
 		},
 		"tech_contacts": schema.SetAttribute{
 			ElementType: types.StringType,
@@ -97,7 +97,7 @@ func makeDomainResourceSchema() map[string]schema.Attribute {
 			Validators: []validator.Set{
 				setvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
-			Description: fmt.Sprintf("Tech contacts (TECH-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
+			Description: fmt.Sprintf("Tech contacts (TECH-C) (between 0 and %d entries)", MAX_CONTACTS),
 		},
 		"billing_contacts": schema.SetAttribute{
 			ElementType: types.StringType,
@@ -109,7 +109,7 @@ func makeDomainResourceSchema() map[string]schema.Attribute {
 			Validators: []validator.Set{
 				setvalidator.SizeBetween(0, MAX_CONTACTS),
 			},
-			Description: fmt.Sprintf("Billing contacts (BILLING-C) (list must have between 0 and %d entries)", MAX_CONTACTS),
+			Description: fmt.Sprintf("Billing contacts (BILLING-C) (between 0 and %d entries)", MAX_CONTACTS),
 		},
 		"dnssec_ds_records": schema.SetAttribute{
 			ElementType: types.StringType,
