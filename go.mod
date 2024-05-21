@@ -1,6 +1,8 @@
 module github.com/Doridian/terraform-provider-hexonet
 
-go 1.22.3
+go 1.21
+
+toolchain go1.22.3
 
 require (
 	github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3 v3.5.6
