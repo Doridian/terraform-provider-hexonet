@@ -61,7 +61,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yuin/goldmark v1.7.4 // indirect
 	github.com/yuin/goldmark-meta v1.1.0 // indirect
-	github.com/zclconf/go-cty v1.14.4 // indirect
+	github.com/zclconf/go-cty v1.15.0 // indirect
 	go.abhg.dev/goldmark/frontmatter v0.2.0 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
