@@ -16,7 +16,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/Kunde21/markdownfmt/v3 v3.1.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.5-proton // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
