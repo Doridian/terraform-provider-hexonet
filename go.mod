@@ -8,7 +8,7 @@ require (
 	github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3 v3.5.6
 	github.com/hashicorp/terraform-plugin-docs v0.19.4
 	github.com/hashicorp/terraform-plugin-framework v1.12.0
-	github.com/hashicorp/terraform-plugin-framework-validators v0.13.0
+	github.com/hashicorp/terraform-plugin-framework-validators v0.14.0
 	github.com/hashicorp/terraform-plugin-go v0.24.0
 )
 
@@ -20,8 +20,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/ProtonMail/go-crypto v1.1.0-beta.0-proton // indirect
-	github.com/apparentlymart/go-textseg/v16 v16.0.0 // indirect
-	github.com/apparentlymart/go-textseg/v16 v16.0.0 // indirect
+	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/bgentry/speakeasy v0.2.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.7.1 // indirect
