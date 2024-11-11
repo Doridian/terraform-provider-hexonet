@@ -5,7 +5,7 @@ go 1.22.7
 toolchain go1.23.3
 
 require (
-	github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v3 v3.5.6
+	github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v5 v5.0.0
 	github.com/centralnicgroup-opensource/rtldev-middleware-go-sdk/v5 v5.0.0
 	github.com/hashicorp/terraform-plugin-docs v0.20.0
 	github.com/hashicorp/terraform-plugin-framework v1.13.0
